@@ -1,0 +1,5 @@
+* setup - UNIX home directory configuration
+  Clone into home directory.  Excludes all files, by default: to add
+  a file for tracking, use: git add -f <filename>
+** Makefile
+   Checks, downloads and builds necessary targets
