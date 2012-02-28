@@ -1,14 +1,52 @@
 #
 # Makefile	-- GNU 'make' for validating and building home setup
 #
-.PHONY: FORCE
-all:			emacs			\
-			homebrew
 
+#
+# Obtaining Individual Files from github.com:
+#
+#    Github redirects URLs of the form:
+#
+#        https://github.com/<user>/<repo>/raw/<branch>/<filename>
+# to:
+#        https://raw.github.com/<user>/<repo>/<branch>/<filename>
+#
+
+.PHONY: FORCE
+all:			bash			\
+			iterm			\
+			emacs			\
+			homebrew		\
+
+# bash		-- set up bash, etc.
+.PHONY: bash
+bash:			.git-completion.bash
+
+.git-completion.bash:
+	curl -o $@ https://raw.github.com/git/git/master/contrib/completion/git-completion.bash
+
+# iterm		-- make sure its installed, and configured
+.PHONY: iterm
+iterm:			Library//Preferences/com.googlecode.iterm2.plist \
+
+Library//Preferences/com.googlecode.iterm2.plist:\
+			FORCE
+	@if [ ! -r $@ ]; then			\
+	    echo "*** Install iTerm2!"; false;	\
+	fi
+	@if ! plutil -convert xml1 -o - $@ | grep -q "<key>0xd-0x60000</key>"; then \
+	    echo "*** Configure iTerm2 Profiles/Keys <shift-control-return> to Send Hex: 0x03 0x18 0x08"; \
+	fi
 
 # homebrew	-- build various applications
 .PHONY: homebrew
-homebrew:		FORCE
+homebrew:		/usr/local/bin/brew
+
+/usr/local/bin/brew:	FORCE
+	if [ ! -r $@a ]; then			\
+	    echo 'Installing homebrew...";	\
+	    /usr/bin/ruby -e "$(curl -fsSL https://raw.github.com/gist/323731)"; \
+	fi
 
 # emacs 24.0	-- editor and any necessary components
 .PHONY: emacs emacs-24

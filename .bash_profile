@@ -2,7 +2,17 @@
 # brew installs to /usr/local/bin
 export PATH=/usr/local/bin:$PATH
 
-export PROMPT_COMMAND=__git_prompt
+export GIT_PS1_SHOWDIRTYSTATE=1
+export GIT_PS1_SHOWUNTRACKEDFILES=1
+export GIT_PS1_SHOWUPSTREAM="auto"
+
+source ~/.git-completion.bash
+if (( $? )); then
+    export PROMPT_COMMAND=__git_prompt
+else
+    export PS1='[\u@\h \W$(__git_ps1 " (%s)")]\$ '
+fi
+
 __git_prompt ()
 {
     txtblk='\e[0;30m' # Black - Regular
