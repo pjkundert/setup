@@ -65,12 +65,13 @@ Library/Preferences/com.googlecode.iterm2.plist:\
 homebrew:		/usr/local/bin/brew
 
 /usr/local/bin/brew:	FORCE
-	@if [ ! -r $@a ]				\
-		&& read -p "Install homebrew? (y/n)" R	\
-		&& [[ "${R%%[Yy]*}" == "" ]]; then	\
-	    /usr/bin/ruby -e "$$(curl -fsSL https://raw.github.com/gist/323731)"; \
-	else						\
-	    echo "Please install homebrew."; false;	\
+	@if [ ! -x $@ ]; then				\
+	    if read -p "Install homebrew? (y/n)" R	\
+		&& [[ "$${R##[Yy]*}" == "" ]]; then	\
+		/usr/bin/ruby -e "$$(curl -fsSL https://raw.github.com/gist/323731)"; \
+	    else					\
+		echo "Please install homebrew."; false;	\
+	    fi;						\
 	fi
 
 # emacs 24.0	-- editor and any necessary components
