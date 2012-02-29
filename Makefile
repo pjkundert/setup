@@ -12,11 +12,16 @@
 #        https://raw.github.com/<user>/<repo>/<branch>/<filename>
 #
 
+homebrew		= /usr/local/bin/brew
+bazaar			= /usr/local/bin/bzr
+aspell			= /usr/local/bin/aspell
+
+
 .PHONY: FORCE
 all:			bash				\
 			iterm				\
 			emacs				\
-			homebrew			\
+			$(homebrew)			\
 
 # bash		-- set up bash, etc.
 #
@@ -60,26 +65,33 @@ Library/Preferences/com.googlecode.iterm2.plist:\
 
 # homebrew	-- required to build various applications
 #
-#     Tests for existence and offer to install if necessary
-.PHONY: homebrew
-homebrew:		/usr/local/bin/brew
+#     Tests for existence and offer to install if necessary.  Always
+# ensure that targets are marked as up-to-date by using, in case brew
+# is ever re-installed, by including '... && touch <target>':
+#
+#     /usr/local/bin/<target>:	$(homebrew)
+#         brew install <target> && touch $@
 
-/usr/local/bin/brew:	FORCE
-	@if [ ! -x $@ ]; then				\
-	    if read -p "Install homebrew? (y/n)" R	\
+/usr/local/bin/brew:
+	@if read -p "Install homebrew? (y/n)" R		\
 		&& [[ "$${R##[Yy]*}" == "" ]]; then	\
-		/usr/bin/ruby -e "$$(curl -fsSL https://raw.github.com/gist/323731)"; \
-	    else					\
-		echo "Please install homebrew."; false;	\
-	    fi;						\
+	    /usr/bin/ruby -e "$$(curl -fsSL https://raw.github.com/gist/323731)"; \
+	else						\
+	    echo "Please install homebrew."; false;	\
 	fi
+
+/usr/local/bin/bzr:	$(homebrew)
+	brew install bazaar && touch $@
+
+/usr/local/bin/aspell:	$(homebrew)
+	brew install aspell --lang=en && touch $@
 
 # emacs 24.0	-- editor and any necessary components
 .PHONY: emacs emacs-24
 emacs:			.emacs.d			\
 			emacs-24			\
 			src/emacs-prelude		\
-			aspell				\
+			$(aspell)			\
 			FORCE
 
 emacs-24:		/usr/local/bin/emacs		\
@@ -91,9 +103,9 @@ emacs-24:		/usr/local/bin/emacs		\
 		echo "Version 24 of emacs needed; found: $(shell emacs --version | head -1 )"; \
 	fi
 
-/usr/local/bin/emacs:	bazaar				\
-			homebrew
-	brew install emacs --HEAD
+/usr/local/bin/emacs:	$(bazaar)			\
+			$(homebrew)
+	brew install emacs --HEAD && touch $@
 
 .emacs.d:
 	git clone git://github.com/pjkundert/emacs-prelude.git $@
@@ -101,7 +113,8 @@ emacs-24:		/usr/local/bin/emacs		\
 
 # org-mode 7.8.03
 #
-#     Builds only if we don't see the compiled .elc files.
+#     Builds only if we don't see the compiled .elc files.  No longer
+# used; emacs 24 comes with a modern org-mode.
 
 .PHONY: org-mode
 org-mode:		src/org-mode/lisp/org-install.elc
@@ -109,17 +122,6 @@ org-mode:		src/org-mode/lisp/org-install.elc
 src/org-mode:
 	git clone git://orgmode.org/org-mode.git $@
 	cd $@; git checkout release_7.8.03
-src/org-mode/lisp/org-install.elc:		\
+src/org-mode/lisp/org-install.elc:			\
 			src/org-mode
 	cd $^; make
-
-# Misc. utilities
-.PHONY: bazaar
-bazaar:			/usr/local/bin/bzr
-aspell:			/usr/local/bin/aspell
-
-/usr/local/bin/bzr:	homebrew
-	brew install bazaar
-
-/usr/local/bin/aspell:	homebrew
-	brew install aspell --lang=en
