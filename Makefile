@@ -20,7 +20,7 @@ all:			bash				\
 
 # bash		-- set up bash, etc.
 #
-#     Checks for and installs git prompt support
+#     Checks for and installs git prompt support.
 .PHONY: bash
 bash:			.git-completion.bash
 
@@ -29,9 +29,10 @@ bash:			.git-completion.bash
 
 # iterm		-- make sure its installed, and configured
 #
-#     For emacs to support org-mode in the terminal, we need to be
-# able to support C-return, S-return and C-S-return; the Mac Terminal
-# and iTerm doesn't send these.  Send alternative OC
+#     For emacs to support org-mode in the iTerm terminal, we need to
+# be able to support C-return, S-return and C-S-return; the Mac
+# Terminal and iTerm doesn't send these.  Send alternative escape
+# sequences; check that iTerm is properly configured.
 #
 .PHONY: iterm
 iterm:			Library/Preferences/com.googlecode.iterm2.plist
