@@ -17,7 +17,7 @@ bazaar			= /usr/local/bin/bzr
 aspell			= /usr/local/bin/aspell
 
 
-.PHONY: FORCE
+.PHONY: FORCE all
 all:			bash				\
 			iterm				\
 			emacs				\
@@ -87,8 +87,12 @@ Library/Preferences/com.googlecode.iterm2.plist:\
 	brew install aspell --lang=en && touch $@
 
 # emacs 24.0	-- editor and any necessary components
+#
+#     Check out pjkundert/emacs-prelude, branch 'hardcons', and
+# always execute the personal/Makefile.
+
 .PHONY: emacs emacs-24
-emacs:			.emacs.d			\
+emacs:			.emacs.d/personal		\
 			emacs-24			\
 			src/emacs-prelude		\
 			$(aspell)			\
@@ -109,19 +113,7 @@ emacs-24:		/usr/local/bin/emacs		\
 
 .emacs.d:
 	git clone git://github.com/pjkundert/emacs-prelude.git $@
+	cd $@; git checkout hardcons
 
-
-# org-mode 7.8.03
-#
-#     Builds only if we don't see the compiled .elc files.  No longer
-# used; emacs 24 comes with a modern org-mode.
-
-.PHONY: org-mode
-org-mode:		src/org-mode/lisp/org-install.elc
-
-src/org-mode:
-	git clone git://orgmode.org/org-mode.git $@
-	cd $@; git checkout release_7.8.03
-src/org-mode/lisp/org-install.elc:			\
-			src/org-mode
-	cd $^; make
+.emacs.d/personal:	.emacs.d
+	cd $@; make
