@@ -18,10 +18,26 @@ aspell			= /usr/local/bin/aspell
 
 
 .PHONY: FORCE all
-all:			bash				\
+all:			git				\
+			bash				\
 			iterm				\
 			emacs				\
 			$(homebrew)			\
+
+# git		-- check git setup
+.PHONY: git
+git:			.gitignore
+
+.gitignore:		FORCE
+	@if [ ! -f $@ ] || ! grep -q user $@; then	\
+	    echo "*** Set up your git user with: git config user.name"; \
+	fi
+	@echo "Your Git user.name is: $(shell git config --get-all user.name)"
+	@echo "If incorrect, edit using: git config --global user.name \"Your Name\""
+	@echo "Your Git user.email is: $(shell git config --get-all user.email)"
+	@echo "If incorrect, edit using: git config --global user.email \"you@example.com\""
+	@echo "Your Git core.editor is: $(shell git config --get-all core.editor)"
+	@echo "If incorrect, edit using: git config --global core.editor emacs"
 
 # bash		-- set up bash, etc.
 #
