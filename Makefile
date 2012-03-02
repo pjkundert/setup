@@ -88,13 +88,12 @@ Library/Preferences/com.googlecode.iterm2.plist:\
 
 # emacs 24.0	-- editor and any necessary components
 #
-#     Check out pjkundert/emacs-prelude, branch 'hardcons', and
+#     Clone and/or pull pjkundert/emacs-prelude, branch 'hardcons', and
 # always execute the personal/Makefile.
 
 .PHONY: emacs emacs-24
 emacs:			.emacs.d/personal		\
 			emacs-24			\
-			src/emacs-prelude		\
 			$(aspell)			\
 			FORCE
 
@@ -111,9 +110,12 @@ emacs-24:		/usr/local/bin/emacs		\
 			$(homebrew)
 	brew install emacs --HEAD && touch $@
 
-.emacs.d:
-	git clone git://github.com/pjkundert/emacs-prelude.git $@
+.emacs.d:		FORCE
+	@if [ ! -d $@ ]; then				\
+	    git clone git://github.com/pjkundert/emacs-prelude.git $@; \
+	fi
 	cd $@; git checkout hardcons
+	cd $@; git pull origin hardcons
 
 .emacs.d/personal:	.emacs.d
 	cd $@; make
