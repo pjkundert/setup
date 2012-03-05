@@ -60,9 +60,6 @@ iterm:			Library/Preferences/com.googlecode.iterm2.plist
 
 Library/Preferences/com.googlecode.iterm2.plist:\
 			FORCE
-	@if [ ! -r $@ ]; then				\
-	    echo "*** Install iTerm2!"; false;		\
-	fi
 	@if ! plutil -convert xml1 -o - $@	\
 		| sed -ne '/<key>0xd-0x20000/,/<\/dict>/{p;}' \
 		| grep -q "<string>\[SR</string>"; then \
