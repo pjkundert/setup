@@ -1,0 +1,17 @@
+escape ^]^]
+
+startup_message off
+
+vbell off
+vbell_msg "BEEP"
+
+nethack off
+defscrollback 10000
+
+#backtick 42 1 1 uptime
+#hardstatus alwayslastline "%{kw}%-w%{r}+%n,%t%{-}%+w%42'%=%D %m/%d/%y :: [%c:%s]"
+
+hardstatus alwayslastline "%{.bW}%-w%{.rW}%n %t%{-}%+w %=%{..G} %H %{..Y} %m/%d %C%a "
+
+screen -t Emacs 0 emacs
+screen -t Shell 1 bash
