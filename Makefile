@@ -63,17 +63,17 @@ Library/Preferences/com.googlecode.iterm2.plist:\
 	@if ! plutil -convert xml1 -o - $@	\
 		| sed -ne '/<key>0xd-0x20000/,/<\/dict>/{p;}' \
 		| grep -q "<string>\[SR</string>"; then \
-	    echo "*** Configure iTerm2 Profiles/Keys <shift-return> to Send Escape Code \[SR"; \
+	    echo "*** Configure iTerm2 Profiles/Keys <shift-return> to Send Escape Code [SR"; \
 	fi
 	@if ! plutil -convert xml1 -o - $@	\
 		| sed -ne '/<key>0xd-0x40000/,/<\/dict>/{p;}' \
 		| grep -q "<string>\[CR</string>"; then \
-	    echo "*** Configure iTerm2 Profiles/Keys <control-return> to Send Escape Code \[CR"; \
+	    echo "*** Configure iTerm2 Profiles/Keys <control-return> to Send Escape Code [CR"; \
 	fi
 	@if ! plutil -convert xml1 -o - $@	\
 		| sed -ne '/<key>0xd-0x60000/,/<\/dict>/{p;}' \
 		| grep -q "<string>\[CSR</string>"; then \
-	    echo "*** Configure iTerm2 Profiles/Keys <control-shift-return> to Send Escape Code \[CSR"; \
+	    echo "*** Configure iTerm2 Profiles/Keys <control-shift-return> to Send Escape Code [CSR"; \
 	fi
 
 # homebrew	-- required to build various applications
