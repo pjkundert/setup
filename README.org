@@ -2,7 +2,7 @@
   Clone into home directory.  Or, clone into 'setup', and mv all files
   into your home directory (or better yet, fork and use your own):
 
-    git clone git://@github.com/pjkundert/setup.git
+    git clone git://github.com/pjkundert/setup.git
     mv setup/* setup/.* ~
 
   It must be configured to excludes all files, by default: to add
