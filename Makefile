@@ -16,6 +16,10 @@ homebrew		= /usr/local/bin/brew
 bazaar			= /usr/local/bin/bzr
 aspell			= /usr/local/bin/aspell
 pyvers			= $(shell python --version 2>&1 | sed -ne '/Python/ s/.*\([0-9]\.[0-9]\)\..*/\1/p' )
+pgitvers		= 0.3.1
+pgitpath		= /usr/local/lib/python$(pyvers)/site-packages/GitPython-$(pgitvers)-py$(pyvers).egg
+ittyvers		= 0.8.1
+ittypath		= /usr/local/lib/python$(pyvers)/site-packages/itty-$(ittyvers)-py$(pyvers).egg-info
 
 #
 # Target to allow the printing of 'make' variables, eg:
@@ -147,21 +151,34 @@ emacs-24:		/usr/local/bin/emacs		\
 
 # python
 #
-#     Various required python extension
-.PHONY: python git-python
+#     Various required python extension.  Source in ~/src/..., install
+# into /usr/local/python#.#/site-packages/.
+
+.PHONY: python git-python itty
 
 python:
 	@if ! python --version 2>&1 | grep -q "2.[67]"; then \
 	    echo "Need Python 2.[67]; found: $(shell python --version 2>&1 )"; \
 	fi
 
+# GitPython	-- Python git API module "git"
 src/git-python:		FORCE
 	git clone git://github.com/pjkundert/GitPython.git $@ || true
 	cd $@; git pull origin master
 
-/usr/local/lib/python$(pyvers)/site-packages/git.py:	\
-			src/git-python
+$(pgitpath):		src/git-python
 	mkdir -p $(dir $@)
 	export PYTHONPATH=$(dir $@); cd $^; python setup.py install --prefix=/usr/local
 
-git-python:		python /usr/local/lib/python$(pyvers)/site-packages/git.py
+git-python:		python $(pgitpath)
+
+# itty		-- Python webserver module "itty"
+src/itty:		FORCE
+	git clone git://github.com/pjkundert/itty.git $@ || true
+	cd $@; git pull origin master
+
+$(ittypath):		src/itty
+	mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $^; python setup.py install --prefix=/usr/local
+
+itty:			python $(ittypath)
