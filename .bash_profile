@@ -1,6 +1,7 @@
 
 # brew installs to /usr/local/bin
 export PATH=/usr/local/bin:$PATH
+export PYTHONPATH=/usr/local/lib/python2.7/site-packages
 
 export GIT_PS1_SHOWDIRTYSTATE=1
 export GIT_PS1_SHOWUNTRACKEDFILES=1

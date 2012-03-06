@@ -15,6 +15,16 @@
 homebrew		= /usr/local/bin/brew
 bazaar			= /usr/local/bin/bzr
 aspell			= /usr/local/bin/aspell
+pyvers			= $(shell python --version 2>&1 | sed -ne '/Python/ s/.*\([0-9]\.[0-9]\)\..*/\1/p' )
+
+#
+# Target to allow the printing of 'make' variables, eg:
+#
+#     make print-CXXFLAGS
+#
+print-%:
+	@echo $* = $($*)
+	@echo $*\'s origin is $(origin $*)
 
 
 .PHONY: FORCE all
@@ -23,6 +33,7 @@ all:			git				\
 			iterm				\
 			emacs				\
 			$(homebrew)			\
+			python
 
 # git		-- check git setup
 .PHONY: git
@@ -113,10 +124,10 @@ emacs:			.emacs.d/personal		\
 emacs-24:		/usr/local/bin/emacs		\
 			FORCE
 	@if ! which emacs | grep -q /usr/local/bin/emacs; then \
-		echo "Add /usr/local/bin to beginning of PATH; adjust /etc/paths, or .bash_profile"; \
+	    echo "Add /usr/local/bin to beginning of PATH; adjust /etc/paths, or .bash_profile"; \
 	fi
 	@if ! emacs --version | grep -q "GNU Emacs 24"; then \
-		echo "Version 24 of emacs needed; found: $(shell emacs --version | head -1 )"; \
+	    echo "Version 24 of emacs needed; found: $(shell emacs --version | head -1 )"; \
 	fi
 
 /usr/local/bin/emacs:	$(bazaar)			\
@@ -132,3 +143,25 @@ emacs-24:		/usr/local/bin/emacs		\
 
 .emacs.d/personal:	.emacs.d
 	cd $@; make
+
+
+# python
+#
+#     Various required python extension
+.PHONY: python git-python
+
+python:
+	@if ! python --version 2>&1 | grep -q "2.[67]"; then \
+	    echo "Need Python 2.[67]; found: $(shell python --version 2>&1 )"; \
+	fi
+
+src/git-python:		FORCE
+	git clone git://github.com/pjkundert/GitPython.git $@ || true
+	cd $@; git pull origin master
+
+/usr/local/lib/python$(pyvers)/site-packages/git.py:	\
+			src/git-python
+	mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $^; python setup.py install --prefix=/usr/local
+
+git-python:		python /usr/local/lib/python$(pyvers)/site-packages/git.py
