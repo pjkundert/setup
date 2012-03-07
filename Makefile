@@ -20,6 +20,8 @@ pgitvers		= 0.3.1
 pgitpath		= /usr/local/lib/python$(pyvers)/site-packages/GitPython-$(pgitvers)-py$(pyvers).egg
 ittyvers		= 0.8.1
 ittypath		= /usr/local/lib/python$(pyvers)/site-packages/itty-$(ittyvers)-py$(pyvers).egg-info
+webpyvers		= 0.37
+webpypath		= /usr/local/lib/python$(pyvers)/site-packages/web.py-$(webpyvers)-py$(pyvers).egg-info
 
 #
 # Target to allow the printing of 'make' variables, eg:
@@ -182,3 +184,14 @@ $(ittypath):		src/itty
 	export PYTHONPATH=$(dir $@); cd $^; python setup.py install --prefix=/usr/local
 
 itty:			python $(ittypath)
+
+# web.py	-- Pytnon webserver module "web"
+src/webpy:		FORCE
+	git clone git://github.com/pjkundert/webpy.git $@ || true
+	cd $@; git pull origin master
+
+$(webpypath):		src/webpy
+	mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $^; python setup.py install --prefix=/usr/local
+
+webpy:			python $(webpypath)
