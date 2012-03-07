@@ -16,8 +16,8 @@ homebrew		= /usr/local/bin/brew
 bazaar			= /usr/local/bin/bzr
 aspell			= /usr/local/bin/aspell
 pyvers			= $(shell python --version 2>&1 | sed -ne '/Python/ s/.*\([0-9]\.[0-9]\)\..*/\1/p' )
-pgitvers		= 0.3.1
-pgitpath		= /usr/local/lib/python$(pyvers)/site-packages/GitPython-$(pgitvers)-py$(pyvers).egg
+gitpyvers		= 0.3.1
+gitpypath		= /usr/local/lib/python$(pyvers)/site-packages/GitPython-$(gitpyvers)-py$(pyvers).egg
 ittyvers		= 0.8.1
 ittypath		= /usr/local/lib/python$(pyvers)/site-packages/itty-$(ittyvers)-py$(pyvers).egg-info
 webpyvers		= 0.37
@@ -39,7 +39,8 @@ all:			git				\
 			iterm				\
 			emacs				\
 			$(homebrew)			\
-			python
+			python				\
+			python-modules
 
 # git		-- check git setup
 .PHONY: git
@@ -156,23 +157,27 @@ emacs-24:		/usr/local/bin/emacs		\
 #     Various required python extension.  Source in ~/src/..., install
 # into /usr/local/python#.#/site-packages/.
 
-.PHONY: python git-python itty
+.PHONY: python git-python itty webpy
 
 python:
 	@if ! python --version 2>&1 | grep -q "2.[67]"; then \
 	    echo "Need Python 2.[67]; found: $(shell python --version 2>&1 )"; \
 	fi
 
+python-modules:		git-python			\
+			itty				\
+			webpy
+
 # GitPython	-- Python git API module "git"
 src/git-python:		FORCE
 	git clone git://github.com/pjkundert/GitPython.git $@ || true
 	cd $@; git pull origin master
 
-$(pgitpath):		src/git-python
+$(gitpypath):		src/git-python
 	mkdir -p $(dir $@)
 	export PYTHONPATH=$(dir $@); cd $^; python setup.py install --prefix=/usr/local
 
-git-python:		python $(pgitpath)
+git-python:		python $(gitpypath)
 
 # itty		-- Python webserver module "itty"
 src/itty:		FORCE
