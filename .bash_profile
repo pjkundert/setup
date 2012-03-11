@@ -3,6 +3,8 @@
 export PATH=/usr/local/bin:$PATH
 export PYTHONPATH=/usr/local/lib/python2.7/site-packages
 
+export EDITOR=emacs
+
 export GIT_PS1_SHOWDIRTYSTATE=1
 export GIT_PS1_SHOWUNTRACKEDFILES=1
 export GIT_PS1_SHOWUPSTREAM="auto"
