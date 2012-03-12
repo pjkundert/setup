@@ -13,6 +13,7 @@
 #
 
 homebrew		= /usr/local/bin/brew
+emacs			= /usr/local/bin/emacs
 bazaar			= /usr/local/bin/bzr
 aspell			= /usr/local/bin/aspell
 gnutls			= /usr/local/bin/gnutls-serv
@@ -129,11 +130,9 @@ $(gnutls):		$(homebrew)
 .PHONY: emacs emacs-24
 emacs:			.emacs.d/personal		\
 			emacs-24			\
-			$(aspell)			\
-			$(gnutls)			\
 			FORCE
 
-emacs-24:		/usr/local/bin/emacs		\
+emacs-24:		$(emacs)			\
 			FORCE
 	@if ! which emacs | grep -q /usr/local/bin/emacs; then \
 	    echo "Add /usr/local/bin to beginning of PATH; adjust /etc/paths, or .bash_profile"; \
@@ -142,9 +141,11 @@ emacs-24:		/usr/local/bin/emacs		\
 	    echo "Version 24 of emacs needed; found: $(shell emacs --version | head -1 )"; \
 	fi
 
-/usr/local/bin/emacs:	$(bazaar)			\
+$(emacs):		$(bazaar)			\
+			$(aspell)			\
+			$(gnutls)			\
 			$(homebrew)
-	brew install emacs --HEAD && touch $@
+	brew install emacs --HEAD --use-git-head && touch $@
 
 .emacs.d:		FORCE
 	@if [ ! -d $@ ]; then				\
