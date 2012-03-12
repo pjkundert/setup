@@ -15,6 +15,7 @@
 homebrew		= /usr/local/bin/brew
 bazaar			= /usr/local/bin/bzr
 aspell			= /usr/local/bin/aspell
+gnutls			= /usr/local/bin/gnutls-serv
 pyvers			= $(shell python --version 2>&1 | sed -ne '/Python/ s/.*\([0-9]\.[0-9]\)\..*/\1/p' )
 gitpyvers		= 0.3.1
 gitpypath		= /usr/local/lib/python$(pyvers)/site-packages/GitPython-$(gitpyvers)-py$(pyvers).egg
@@ -111,10 +112,13 @@ Library/Preferences/com.googlecode.iterm2.plist:\
 	    echo "Please install homebrew."; false;	\
 	fi
 
-/usr/local/bin/bzr:	$(homebrew)
+$(bazaar):		$(homebrew)
 	brew install bazaar && touch $@
 
-/usr/local/bin/aspell:	$(homebrew)
+$(aspell):		$(homebrew)
+	brew install aspell --lang=en && touch $@
+
+$(gnutls):		$(homebrew)
 	brew install aspell --lang=en && touch $@
 
 # emacs 24.0	-- editor and any necessary components
@@ -126,6 +130,7 @@ Library/Preferences/com.googlecode.iterm2.plist:\
 emacs:			.emacs.d/personal		\
 			emacs-24			\
 			$(aspell)			\
+			$(gnutls)			\
 			FORCE
 
 emacs-24:		/usr/local/bin/emacs		\
