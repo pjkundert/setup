@@ -1,2 +1,0 @@
-machine imap.gmail.com login <your.name>@gmail.com password <your-password> port 993
-machine smtp.gmail.com login <your.name>@gmail.com password <your-password> port 587

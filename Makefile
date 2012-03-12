@@ -35,8 +35,9 @@ print-%:
 	@echo $*\'s origin is $(origin $*)
 
 
-.PHONY: FORCE all
-all:			git				\
+.PHONY: FORCE all personal
+all:			personal			\
+			git				\
 			bash				\
 			iterm				\
 			emacs				\
@@ -44,20 +45,70 @@ all:			git				\
 			python				\
 			python-modules
 
+# personal	-- Collect and store personal information in Makefile.personal
+personal:		Makefile.personal		\
+			.authinfo			\
+			.bash_personal			\
+
+Makefile.personal:	FORCE
+	@if [ ! -f $@ ]; then touch $@; fi
+	@if ! grep -q "^fullname=" $@; then		\
+	    echo "This is your Git and Emacs Gnus email full name."; \
+	    read -p "Enter full name: " REPLY; echo "fullname=$$REPLY" >> $@; \
+	fi
+	@if ! grep -q "^emailaddr=" $@; then		\
+	    echo "This is your Git email, and your default Gnus From: address."; \
+	    read -p "Enter email address: " REPLY; echo "emailaddr=$$REPLY" >> $@; \
+	fi
+	@if ! grep -q "^username=" $@; then		\
+	    echo "This is your Org clock user ID.  Short, lower-case"; \
+	    read -p "Enter username: " REPLY; echo "username=$$REPLY" >> $@; \
+	fi
+	@if ! grep -q "^gmailaddr=" $@; then		\
+	    read -p "Enter gmail address: " REPLY; echo "gmailaddr=$$REPLY" >> $@; \
+	fi
+	@if ! grep -q "^gmailpass=" $@; then		\
+	    echo "Only do this, if you have enabled Gmail 2-step verificationn, and have"; \
+	    echo "created an application-specific password!!  Otherwise, hit return..."; \
+	    read -p "Enter gmail password: " REPLY; echo "gmailpass=$$REPLY" >> $@; \
+	fi
+
+# If we've modified Makefile.personal GNU make will re-exec the make...
+include Makefile.personal
+
+.bash_personal:		Makefile.personal		\
+			FORCE
+	@if ! grep -q "^export EMAIL=$(emailaddr)" < $@; then \
+	    echo "Updating $@ for EMAIL environment variable..."; \
+	    echo "export EMAIL=$(emailaddr)" >> $@;	\
+	fi
+
+.authinfo:		Makefile.personal		\
+			FORCE
+	@if ! grep -q "$(gmailaddr) password $(gmailpass)" $@; then \
+	    echo "Updating $@ for gnutls Gmail account access..."; \
+	    echo "machine imap.gmail.com login $(gmailaddr) password $(gmailpass) port 993" > $@; \
+	    echo "machine smtp.gmail.com login $(gmailaddr) password $(gmailpass) port 587" >> $@; \
+	fi
+	@chmod 0600 $@
+
+
 # git		-- check git setup
 .PHONY: git
-git:			.gitignore
-
-.gitignore:		FORCE
-	@if [ ! -f $@ ] || ! grep -q user $@; then	\
-	    echo "*** Set up your git user with: git config user.name"; \
+git:			Makefile.personal		\
+			FORCE
+	@if [[ "$(shell git config --get user.name)" != "$(fullname)" ]]; then \
+	    echo "Your Git user.name was: $(shell git config --get user.name); updating to $(fullname)"; \
+	    git config --global user.name "$(fullname)"; \
 	fi
-	@echo "Your Git user.name is: $(shell git config --get-all user.name)"
-	@echo "If incorrect, edit using: git config --global user.name \"Your Name\""
-	@echo "Your Git user.email is: $(shell git config --get-all user.email)"
-	@echo "If incorrect, edit using: git config --global user.email \"you@example.com\""
-	@echo "Your Git core.editor is: $(shell git config --get-all core.editor)"
-	@echo "If incorrect, edit using: git config --global core.editor emacs"
+	@if [[ "$(shell git config --get user.email)" != "$(emailaddr)" ]]; then \
+	    echo "Your Git user.email was: $(shell git config --get user.email); updating to $(emailaddr)"; \
+	    git config --global user.email "$(emailaddr)"; \
+	fi
+	@if [[ "$(shell git config --get core.editor)" != "emacs" ]]; then \
+	    echo "Your Git core.editor was: $(shell git config --get core.editor); updating to emacs"; \
+	    git config --global core.editor "emacs"; \
+	fi
 
 # bash		-- set up bash, etc.
 #
@@ -125,7 +176,11 @@ $(gnutls):		$(homebrew)
 # emacs 24.0	-- editor and any necessary components
 #
 #     Clone and/or pull pjkundert/emacs-prelude, branch 'hardcons', and
-# always execute the personal/Makefile.
+# always execute the personal/Makefile; ensure we've updated the
+# 'personal' target, here, since Makefile.personal is used by
+# .emacs.d/personal/Makefile, to generate various personalized
+# variables.
+
 
 .PHONY: emacs emacs-24
 emacs:			.emacs.d/personal		\
@@ -154,7 +209,8 @@ $(emacs):		$(bazaar)			\
 	cd $@; git checkout hardcons
 	cd $@; git pull origin hardcons
 
-.emacs.d/personal:	.emacs.d
+.emacs.d/personal:	.emacs.d			\
+			personal
 	cd $@; make
 
 
