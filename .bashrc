@@ -6,7 +6,15 @@ if [ -f ~/.bash_personal ]; then
     source ~/.bash_personal
 fi
 
-export PATH=/usr/local/bin:$PATH
+# All admin and/or staff on the *same* mac/linux host should be able
+# to write directories/files created.  In particular, if this is not
+# set, then installations created under /usr/local/... (ie. using
+# brew) will not be able to be modified by other users on the box.
+# WARNING: if you do not trust the other users on your host, change
+# this!
+umask 002
+
+export PATH=$HOME/bin:/usr/local/bin:$PATH
 export PYTHONPATH=/usr/local/lib/python2.7/site-packages
 
 export EDITOR=emacs

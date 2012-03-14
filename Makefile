@@ -202,14 +202,27 @@ $(emacs):		$(bazaar)			\
 			$(homebrew)
 	brew install emacs --HEAD --use-git-head && touch $@
 
+.emacs:			FORCE
+	@if [ -f $@ ]; then				\
+	    echo "*** $@ exists; move aside.";		\
+	    false;					\
+	fi
+
 .emacs.d:		FORCE
 	@if [ ! -d $@ ]; then				\
 	    git clone git://github.com/pjkundert/emacs-prelude.git $@; \
+	else						\
+	    if [ ! -d $@/.git ]				\
+		    || ! grep -q "emacs-prelude.git" $@/.git/config; then \
+		echo "*** $@ exists, but is not emacs-prelude!  Move aside."; \
+		false;					\
+	    fi						\
 	fi
 	cd $@; git checkout hardcons
 	cd $@; git pull origin hardcons
 
-.emacs.d/personal:	.emacs.d			\
+.emacs.d/personal:	.emacs				\
+			.emacs.d			\
 			personal
 	cd $@; make
 
