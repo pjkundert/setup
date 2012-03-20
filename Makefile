@@ -25,6 +25,14 @@ ittypath		= /usr/local/lib/python$(pyvers)/site-packages/itty-$(ittyvers)-py$(py
 webpyvers		= 0.37
 webpypath		= /usr/local/lib/python$(pyvers)/site-packages/web.py-$(webpyvers)-py$(pyvers).egg-info
 
+nosevers		= 0.95
+nosepath		= /usr/local/bin/nosetests
+
+mockvers		= 0.5.0
+mockfile		= mock-$(mockvers).zip
+mockurl			= http://mock.googlecode.com/files/$(mockfile)
+mockpath		= /usr/local/lib/python$(pyvers)/site-packages/mock-$(mockvers)-py$(pyvers).egg
+
 #
 # Target to allow the printing of 'make' variables, eg:
 #
@@ -232,7 +240,7 @@ $(emacs):		$(bazaar)			\
 #     Various required python extension.  Source in ~/src/..., install
 # into /usr/local/python#.#/site-packages/.
 
-.PHONY: python git-python itty webpy
+.PHONY: python git-python itty webpy nose
 
 python:
 	@if ! python --version 2>&1 | grep -q "2.[67]"; then \
@@ -241,22 +249,30 @@ python:
 
 python-modules:		git-python			\
 			itty				\
-			webpy
+			webpy				\
+			nose
 
 # GitPython	-- Python git API module "git"
 src/git-python:		FORCE
-	git clone git://github.com/pjkundert/GitPython.git $@ || true
-	cd $@; git pull origin master
+	@if [ ! -d $@ ]; then				\
+	    git clone git://github.com/pjkundert/GitPython.git $@; \
+	fi
+#	cd $@; git checkout master; git pull origin master
+	cd $@; git checkout 0.3;    git pull origin 0.3
+	git submodule update --init --recursive
 
-$(gitpypath):		src/git-python
+$(gitpypath):		src/git-python			\
+			FORCE
 	mkdir -p $(dir $@)
 	export PYTHONPATH=$(dir $@); cd $^; python setup.py install --prefix=/usr/local
 
-git-python:		python $(gitpypath)
+git-python:		python nose mock $(gitpypath)
 
 # itty		-- Python webserver module "itty"
 src/itty:		FORCE
-	git clone git://github.com/pjkundert/itty.git $@ || true
+	@if [ ! -d $@ ]; then				\
+	    git clone git://github.com/pjkundert/itty.git $@; \
+	fi
 	cd $@; git pull origin master
 
 $(ittypath):		src/itty
@@ -267,7 +283,9 @@ itty:			python $(ittypath)
 
 # web.py	-- Pytnon webserver module "web"
 src/webpy:		FORCE
-	git clone git://github.com/pjkundert/webpy.git $@ || true
+	@if [ ! -d $@ ]; then				\
+	    git clone git://github.com/pjkundert/webpy.git $@; \
+	fi
 	cd $@; git pull origin master
 
 $(webpypath):		src/webpy
@@ -275,3 +293,29 @@ $(webpypath):		src/webpy
 	export PYTHONPATH=$(dir $@); cd $^; python setup.py install --prefix=/usr/local
 
 webpy:			python $(webpypath)
+
+# nose		-- Python unittest helper nosetests (like py.test)
+src/nose:		FORCE
+	@if [ ! -d $@ ]; then				\
+	    git clone git://github.com/nose-devs/nose.git $@; \
+	fi
+	cd $@; git pull origin master
+
+$(nosepath):		src/nose
+	mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $^; python setup.py install --prefix=/usr/local
+
+nose:			python $(nosepath)
+
+# mock		-- Python testing utility
+src/$(mockfile):
+	curl -o $@ $(mockurl)
+
+src/mock-$(mockvers):	src/$(mockfile)
+	cd $(dir $@) && unzip -o $(mockfile)
+
+$(mockpath):		src/mock-$(mockvers)
+	mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $^; python setup.py install --prefix=/usr/local
+
+mock:			python $(mockpath)
