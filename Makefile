@@ -29,8 +29,8 @@ ittypath		= /usr/local/lib/python$(pyvers)/site-packages/itty-$(ittyvers)-py$(py
 webpyvers		= 0.37
 webpypath		= /usr/local/lib/python$(pyvers)/site-packages/web.py-$(webpyvers)-py$(pyvers).egg-info
 
-nosevers		= 0.95
-nosepath		= /usr/local/bin/nosetests
+nosevers		= 1.1.3.dev
+nosepath		= /usr/local/lib/python$(pyvers)/site-packages/nose-$(nosevers)-py$(pyvers).egg
 
 mockvers		= 0.5.0
 mockfile		= mock-$(mockvers).zip
@@ -338,7 +338,7 @@ src/mock-$(mockvers):	src/$(mockfile)
 
 $(mockpath):		src/mock-$(mockvers)
 	mkdir -p $(dir $@)
-	export PYTHONPATH=$(dir $@); cd $^; python setup.py install --prefix=/usr/local
+	export PYTHONPATH=$(dir $@):$(PYTHONPATH)}; cd $^; python setup.py install --prefix=/usr/local
 
 mock:			python $(mockpath)
 
