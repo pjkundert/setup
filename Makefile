@@ -17,11 +17,15 @@ emacs			= /usr/local/bin/emacs
 bazaar			= /usr/local/bin/bzr
 aspell			= /usr/local/bin/aspell
 gnutls			= /usr/local/bin/gnutls-serv
+
 pyvers			= $(shell python --version 2>&1 | sed -ne '/Python/ s/.*\([0-9]\.[0-9]\)\..*/\1/p' )
+
 gitpyvers		= 0.3.1
 gitpypath		= /usr/local/lib/python$(pyvers)/site-packages/GitPython-$(gitpyvers)-py$(pyvers).egg
+
 ittyvers		= 0.8.1
 ittypath		= /usr/local/lib/python$(pyvers)/site-packages/itty-$(ittyvers)-py$(pyvers).egg-info
+
 webpyvers		= 0.37
 webpypath		= /usr/local/lib/python$(pyvers)/site-packages/web.py-$(webpyvers)-py$(pyvers).egg-info
 
@@ -32,6 +36,10 @@ mockvers		= 0.5.0
 mockfile		= mock-$(mockvers).zip
 mockurl			= http://mock.googlecode.com/files/$(mockfile)
 mockpath		= /usr/local/lib/python$(pyvers)/site-packages/mock-$(mockvers)-py$(pyvers).egg
+
+splunksdkvers		= 0.9.0
+splunksdkpath		= /usr/local/lib/python$(pyvers)/site-packages/splunk-$(splunksdkvers)-py$(pyvers).egg
+splunksdkurl		= https://github.com/splunk/splunk-sdk-python.git
 
 #
 # Target to allow the printing of 'make' variables, eg:
@@ -79,6 +87,15 @@ Makefile.personal:	FORCE
 	    echo "Only do this, if you have enabled Gmail 2-step verificationn, and have"; \
 	    echo "created an application-specific password!!  Otherwise, hit return..."; \
 	    read -p "Enter gmail password: " REPLY; echo "gmailpass=$$REPLY" >> $@; \
+	fi
+	@if ! grep -q "^splunkhost=" $@; then		\
+	    read -p "Enter splunk hostname: " REPLY; echo "splunkhost=$$REPLY" >> $@; \
+	fi
+	@if ! grep -q "^splunkuser=" $@; then		\
+	    read -p "Enter splunk username: " REPLY; echo "splunkuser=$$REPLY" >> $@; \
+	fi
+	@if ! grep -q "^splunkpass=" $@; then		\
+	    read -p "Enter splunk password: " REPLY; echo "splunkpass=$$REPLY" >> $@; \
 	fi
 
 # If we've modified Makefile.personal GNU make will re-exec the make...
@@ -240,7 +257,7 @@ $(emacs):		$(bazaar)			\
 #     Various required python extension.  Source in ~/src/..., install
 # into /usr/local/python#.#/site-packages/.
 
-.PHONY: python git-python itty webpy nose
+.PHONY: python
 
 python:
 	@if ! python --version 2>&1 | grep -q "2.[67]"; then \
@@ -250,9 +267,11 @@ python:
 python-modules:		git-python			\
 			itty				\
 			webpy				\
-			nose
+			nose				\
+			splunk
 
 # GitPython	-- Python git API module "git"
+.PHONY: git-python
 src/git-python:		FORCE
 	@if [ ! -d $@ ]; then				\
 	    git clone git://github.com/pjkundert/GitPython.git $@; \
@@ -282,6 +301,7 @@ $(ittypath):		src/itty
 itty:			python $(ittypath)
 
 # web.py	-- Pytnon webserver module "web"
+.PHONY: webpy
 src/webpy:		FORCE
 	@if [ ! -d $@ ]; then				\
 	    git clone git://github.com/pjkundert/webpy.git $@; \
@@ -295,6 +315,7 @@ $(webpypath):		src/webpy
 webpy:			python $(webpypath)
 
 # nose		-- Python unittest helper nosetests (like py.test)
+.PHONY: nose
 src/nose:		FORCE
 	@if [ ! -d $@ ]; then				\
 	    git clone git://github.com/nose-devs/nose.git $@; \
@@ -308,6 +329,7 @@ $(nosepath):		src/nose
 nose:			python $(nosepath)
 
 # mock		-- Python testing utility
+.PHONY: mock
 src/$(mockfile):
 	curl -o $@ $(mockurl)
 
@@ -319,3 +341,34 @@ $(mockpath):		src/mock-$(mockvers)
 	export PYTHONPATH=$(dir $@); cd $^; python setup.py install --prefix=/usr/local
 
 mock:			python $(mockpath)
+
+# splunkpy	-- Python Splunk API
+.PHONY: splunk
+src/splunk-sdk-python:	FORCE
+	@if [ ! -d $@ ]; then				\
+	    git clone $(splunksdkurl) $@;		\
+	fi
+	cd $@; git pull origin master
+
+$(splunksdkpath):	src/splunk-sdk-python
+	mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $^; python setup.py install --prefix=/usr/local
+
+.splunkrc:		Makefile.personal		\
+			FORCE
+	@if ! grep -q "^host=$(splunkhost)" < $@; then	\
+	    echo "Updating $@ for Splunk host...";	\
+	    echo "host=$(splunkhost)" >> $@;		\
+	fi
+	@if ! grep -q "^username=$(splunkuser)" < $@; then\
+	    echo "Updating $@ for Splunk user...";	\
+	    echo "username=$(splunkuser)" >> $@;	\
+	fi
+	@if ! grep -q "^password=$(splunkpass)" < $@; then\
+	    echo "Updating $@ for Splunk password...";	\
+	    echo "password=$(splunkpass)" >> $@;	\
+	fi
+
+splunk:			python				\
+			$(splunksdkpath)		\
+			.splunkrc
