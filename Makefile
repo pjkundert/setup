@@ -196,7 +196,7 @@ $(aspell):		$(homebrew)
 	brew install aspell --lang=en && touch $@
 
 $(gnutls):		$(homebrew)
-	brew install aspell --lang=en && touch $@
+	brew install gnutls && touch $@
 
 # emacs 24.0	-- editor and any necessary components
 #
