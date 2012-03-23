@@ -69,3 +69,4 @@ __git_prompt ()
     fi
     PS1="${debian_chroot:+($debian_chroot)}\u@\h:\w${gitstatus}$ "
 }
+alias l="ls -la"
