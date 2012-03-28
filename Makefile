@@ -15,6 +15,7 @@
 homebrew		= /usr/local/bin/brew
 emacs			= /usr/local/bin/emacs
 bazaar			= /usr/local/bin/bzr
+mercurial		= /usr/local/bin/hg
 aspell			= /usr/local/bin/aspell
 gnutls			= /usr/local/bin/gnutls-serv
 
@@ -29,8 +30,13 @@ ittypath		= /usr/local/lib/python$(pyvers)/site-packages/itty-$(ittyvers)-py$(py
 webpyvers		= 0.37
 webpypath		= /usr/local/lib/python$(pyvers)/site-packages/web.py-$(webpyvers)-py$(pyvers).egg-info
 
+wsgilogvers		= 0.3
+wsgilogurl		= https://bitbucket.org/lcrees/wsgilog
+wsgilogpath		= /usr/local/lib/python$(pyvers)/site-packages/wsgilog-$(wsgilogvers)-py$(pyvers).egg
+
 nosevers		= 1.1.3.dev
 nosepath		= /usr/local/lib/python$(pyvers)/site-packages/nose-$(nosevers)-py$(pyvers).egg
+noseurl			= git://github.com/nose-devs/nose.git
 
 mockvers		= 0.5.0
 mockfile		= mock-$(mockvers).zip
@@ -192,6 +198,9 @@ Library/Preferences/com.googlecode.iterm2.plist:\
 $(bazaar):		$(homebrew)
 	brew install bazaar && touch $@
 
+$(mercurial):		$(homebrew)
+	brew install mercurial && touch $@
+
 $(aspell):		$(homebrew)
 	brew install aspell --lang=en && touch $@
 
@@ -267,6 +276,7 @@ python:
 python-modules:		git-python			\
 			itty				\
 			webpy				\
+			wsgilog				\
 			nose				\
 			splunk
 
@@ -314,11 +324,27 @@ $(webpypath):		src/webpy
 
 webpy:			python $(webpypath)
 
+# wsgilog	-- Needed for logging in web.py webservers
+
+.PHONY: wsgilog
+
+src/wsgilog:		$(mercurial) FORCE
+	@if [ ! -d $@ ]; then				\
+	    hg clone $(wsgilogurl) $@;			\
+	fi
+	cd $@; hg pull -u
+
+$(wsgilogpath):		src/wsgilog
+	mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $^/wsgilog; python setup.py install --prefix=/usr/local
+
+wsgilog:		python $(wsgilogpath)
+
 # nose		-- Python unittest helper nosetests (like py.test)
 .PHONY: nose
 src/nose:		FORCE
 	@if [ ! -d $@ ]; then				\
-	    git clone git://github.com/nose-devs/nose.git $@; \
+	    git clone $(noseurl) $@;			\
 	fi
 	cd $@; git pull origin master
 
