@@ -21,13 +21,18 @@ gnutls			= /usr/local/bin/gnutls-serv
 
 pyvers			= $(shell python --version 2>&1 | sed -ne '/Python/ s/.*\([0-9]\.[0-9]\)\..*/\1/p' )
 
-gitpyvers		= 0.3.1
+gitpyvers		= 0.3.2.RC1
+#gitpyurl		= git://github.com/gitpython-developers/GitPython.git
+gitpyurl		= git://github.com/pjkundert/GitPython.git
+gitpybranch		= 0.3
 gitpypath		= /usr/local/lib/python$(pyvers)/site-packages/GitPython-$(gitpyvers)-py$(pyvers).egg
 
 ittyvers		= 0.8.1
 ittypath		= /usr/local/lib/python$(pyvers)/site-packages/itty-$(ittyvers)-py$(pyvers).egg-info
 
 webpyvers		= 0.37
+#webpyurl		= git://github.com/webpy/webpy.git
+webpyurl		= git://github.com/pjkundert/webpy.git
 webpypath		= /usr/local/lib/python$(pyvers)/site-packages/web.py-$(webpyvers)-py$(pyvers).egg-info
 
 wsgilogvers		= 0.3
@@ -65,7 +70,8 @@ all:			personal			\
 			emacs				\
 			$(homebrew)			\
 			python				\
-			python-modules
+			python-modules			\
+			tex
 
 # personal	-- Collect and store personal information in Makefile.personal
 personal:		Makefile.personal		\
@@ -284,16 +290,14 @@ python-modules:		git-python			\
 .PHONY: git-python
 src/git-python:		FORCE
 	@if [ ! -d $@ ]; then				\
-	    git clone git://github.com/pjkundert/GitPython.git $@; \
+	    git clone $(gitpyurl) $@;			\
 	fi
-#	cd $@; git checkout master; git pull origin master
-	cd $@; git checkout 0.3;    git pull origin 0.3
+	cd $@; git checkout $(gitpybranch); git pull origin $(gitpybranch)
 	git submodule update --init --recursive
 
-$(gitpypath):		src/git-python			\
-			FORCE
+$(gitpypath):		src/git-python
 	mkdir -p $(dir $@)
-	export PYTHONPATH=$(dir $@); cd $^; python setup.py install --prefix=/usr/local
+	export PYTHONPATH=$(dir $@); cd $<; python setup.py install --prefix=/usr/local
 
 git-python:		python nose mock $(gitpypath)
 
@@ -314,7 +318,7 @@ itty:			python $(ittypath)
 .PHONY: webpy
 src/webpy:		FORCE
 	@if [ ! -d $@ ]; then				\
-	    git clone git://github.com/pjkundert/webpy.git $@; \
+	    git clone $(webpyurl) $@;			\
 	fi
 	cd $@; git pull origin master
 
@@ -398,3 +402,9 @@ $(splunksdkpath):	src/splunk-sdk-python
 splunk:			python				\
 			$(splunksdkpath)		\
 			.splunkrc
+
+# Check that MacTex has been installed
+.PHONY: tex
+tex:	/usr/texbin/pdflatex
+/usr/texbin/pdflatex:
+	@echo "Require pdflatex for org-export-as-pdf; Download MacTex from http://www.tug.org/mactex/2011"
