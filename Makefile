@@ -19,6 +19,10 @@ mercurial		= /usr/local/bin/hg
 aspell			= /usr/local/bin/aspell
 gnutls			= /usr/local/bin/gnutls-serv
 
+osname			= macosx
+osvers			= 10.7
+osarch			= intel
+
 pyvers			= $(shell python --version 2>&1 | sed -ne '/Python/ s/.*\([0-9]\.[0-9]\)\..*/\1/p' )
 
 gitpyvers		= 0.3.2.RC1
@@ -284,6 +288,7 @@ python-modules:		git-python			\
 			webpy				\
 			wsgilog				\
 			nose				\
+			websockets			\
 			splunk
 
 # GitPython	-- Python git API module "git"
@@ -296,7 +301,7 @@ src/git-python:		FORCE
 	git submodule update --init --recursive
 
 $(gitpypath):		src/git-python
-	mkdir -p $(dir $@)
+	@mkdir -p $(dir $@)
 	export PYTHONPATH=$(dir $@); cd $<; python setup.py install --prefix=/usr/local
 
 git-python:		python nose mock $(gitpypath)
@@ -309,8 +314,8 @@ src/itty:		FORCE
 	cd $@; git pull origin master
 
 $(ittypath):		src/itty
-	mkdir -p $(dir $@)
-	export PYTHONPATH=$(dir $@); cd $^; python setup.py install --prefix=/usr/local
+	@mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $<; python setup.py install --prefix=/usr/local
 
 itty:			python $(ittypath)
 
@@ -323,24 +328,23 @@ src/webpy:		FORCE
 	cd $@; git pull origin master
 
 $(webpypath):		src/webpy
-	mkdir -p $(dir $@)
-	export PYTHONPATH=$(dir $@); cd $^; python setup.py install --prefix=/usr/local
+	@mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $<; python setup.py install --prefix=/usr/local
 
 webpy:			python $(webpypath)
 
 # wsgilog	-- Needed for logging in web.py webservers
-
 .PHONY: wsgilog
 
 src/wsgilog:		$(mercurial) FORCE
 	@if [ ! -d $@ ]; then				\
 	    hg clone $(wsgilogurl) $@;			\
 	fi
-	cd $@; hg pull -u
+#	cd $@; hg pull -u
 
 $(wsgilogpath):		src/wsgilog
-	mkdir -p $(dir $@)
-	export PYTHONPATH=$(dir $@); cd $^/wsgilog; python setup.py install --prefix=/usr/local
+	@mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $</wsgilog; python setup.py install --prefix=/usr/local
 
 wsgilog:		python $(wsgilogpath)
 
@@ -353,8 +357,8 @@ src/nose:		FORCE
 	cd $@; git pull origin master
 
 $(nosepath):		src/nose
-	mkdir -p $(dir $@)
-	export PYTHONPATH=$(dir $@); cd $^; python setup.py install --prefix=/usr/local
+	@mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $<; python setup.py install --prefix=/usr/local
 
 nose:			python $(nosepath)
 
@@ -367,8 +371,8 @@ src/mock-$(mockvers):	src/$(mockfile)
 	cd $(dir $@) && unzip -o $(mockfile)
 
 $(mockpath):		src/mock-$(mockvers)
-	mkdir -p $(dir $@)
-	export PYTHONPATH=$(dir $@):$(PYTHONPATH)}; cd $^; python setup.py install --prefix=/usr/local
+	@mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@):$(PYTHONPATH)}; cd $<; python setup.py install --prefix=/usr/local
 
 mock:			python $(mockpath)
 
@@ -381,8 +385,8 @@ src/splunk-sdk-python:	FORCE
 	cd $@; git pull origin master
 
 $(splunksdkpath):	src/splunk-sdk-python
-	mkdir -p $(dir $@)
-	export PYTHONPATH=$(dir $@); cd $^; python setup.py install --prefix=/usr/local
+	@mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $<; python setup.py install --prefix=/usr/local
 
 .splunkrc:		Makefile.personal		\
 			FORCE
@@ -402,6 +406,142 @@ $(splunksdkpath):	src/splunk-sdk-python
 splunk:			python				\
 			$(splunksdkpath)		\
 			.splunkrc
+
+
+
+# WebSockets.  Build 2 implementations which seem good.
+.PHONY: websockets
+websockets:		autobahn			\
+			ws4py
+
+# AutobahnPython.  Another WebSockets foundation; evidently highly respected.
+# Requires twisted, also highly respected.    See src/autobahn/examples.
+.PHONY: autobahn twisted
+
+# autobahn-0.5.0-py2.7.egg
+autobahnurl	= git://github.com/tavendo/AutobahnPython.git
+autobahnvers	= 0.5.0
+autobahnpath	= /usr/local/lib/python$(pyvers)/site-packages/autobahn-$(autobahnvers)-py$(pyvers).egg
+
+src/autobahn:		FORCE twisted
+	@if [ ! -d $@ ]; then				\
+	    git clone $(autobahnurl) $@;		\
+	fi
+	cd $@; git checkout v$(autobahnvers)
+
+$(autobahnpath):	src/autobahn
+	ls -la $@
+	@mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $</autobahn; python setup.py install --prefix=/usr/local
+
+autobahn:		python $(autobahnpath)
+
+# Twisted-12.0.0_r34238-py2.7-macosx-10.7-intel.egg
+twistedvers	= 12.0.0
+twistedrev	= r34238
+twistedurl	= svn://svn.twistedmatrix.com/svn/Twisted/tags/releases/twisted-$(twistedvers)
+osname		= macosx
+osvers		= 10.7
+osarch		= intel
+twistedpath	= /usr/local/lib/python$(pyvers)/site-packages/Twisted-$(twistedvers)_$(twistedrev)-py$(pyvers)-$(osname)-$(osvers)-$(osarch).egg
+
+src/twisted:		FORCE
+	@if [ ! -d $@ ]; then				\
+	    svn co $(twistedurl) $@;			\
+	fi
+
+$(twistedpath):		src/twisted
+	@mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $<; python setup.py install --prefix=/usr/local
+
+twisted:		python $(twistedpath)
+
+
+# Demo of WebSockets using gevent, flot.  Installation not complete; too many
+# dependencies...
+.PHONY: gevent-socketio socketio paste
+gevent-socketio:	src/gevent-socketio		\
+			gevent				\
+			socketio			\
+			paste
+
+src/gevent-socketio:	FORCE
+	@if [ ! -d $@ ]; then				\
+	    git clone git://git.code.sf.net/u/rick446/gevent-socketio $@; \
+	fi
+	cd $@; git pull origin master
+
+socketio:
+paste:
+
+# Gevent.  Latest tag 1.0b2; Last stable tag 0.13.1 (no good).  Depends on cython
+# gevent-1.0dev-py2.7-macosx-10.7-intel.egg
+geventurl	= https://bitbucket.org/denis/gevent
+geventvers	= 1.0b2
+geventpath	= /usr/local/lib/python$(pyvers)/site-packages/gevent-1.0dev-py$(pyvers)-$(osname)-$(osvers)-$(osarch).egg
+.PHONY: gevent
+src/gevent:		FORCE cython
+	@if [ ! -d $@ ]; then				\
+	    hg clone -r $(geventvers) $(geventurl) $@;	\
+	fi
+#	cd $@; hg pull -u
+
+$(geventpath):		src/gevent
+	echo "Making: $@"
+	@mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $<; python setup.py install --prefix=/usr/local
+
+gevent:			python $(geventpath)
+
+
+cythonurl	= git://github.com/cython/cython.git
+cythonpath	= /usr/local/bin/cython
+cythonvers	= 0.15.1
+.PHONY: cython
+src/cython:		FORCE
+	@if [ ! -d $@ ]; then				\
+	    git clone $(cythonurl) $@;			\
+	fi
+	cd $@; git checkout $(cythonvers)
+
+$(cythonpath):		src/cython
+	@mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $<; python setup.py install --prefix=/usr/local
+
+cython:			$(cythonpath)
+
+# ws4py; A WSGI WebSockets implementation.  Works with cherrypy and/or gevent
+ws4pyurl	= git://github.com/Lawouach/WebSocket-for-Python.git
+ws4pyvers	= 0.2.1
+ws4pypath	= /usr/local/lib/python$(pyvers)/site-packages/ws4py-$(ws4pyvers)-py$(pyvers).egg
+.PHONY: ws4py
+src/ws4py:		FORCE cherrypy gevent
+	@if [ ! -d $@ ]; then				\
+	    git clone $(ws4pyurl) $@;			\
+	fi
+	cd $@; git checkout v$(ws4pyvers)
+
+$(ws4pypath):		src/ws4py
+	@mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $<; python setup.py install --prefix=/usr/local
+
+ws4py:			python $(ws4pypath)
+
+cherrypyurl	= https://bitbucket.org/cherrypy/cherrypy
+cherrypyvers	= 3.2.2
+cherrypypath	= /usr/local/lib/python$(pyvers)/site-packages/cherrypy-$(cherrypyvers)-py$(pyvers).egg
+.PHONY: cherrypy
+src/cherrypy:		FORCE
+	@if [ ! -d $@ ]; then				\
+	    hg clone -r cherrypy-$(cherrypyvers) $(cherrypyurl) $@; \
+	fi
+#	cd $@; hg pull -u
+
+$(cherrypypath):	src/cherrypy
+	@mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $<; python setup.py install --prefix=/usr/local
+
+cherrypy:		python $(cherrypypath)
 
 # Check that MacTex has been installed
 .PHONY: tex
