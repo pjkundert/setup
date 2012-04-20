@@ -431,7 +431,6 @@ src/autobahn:		FORCE twisted
 	cd $@; git checkout v$(autobahnvers)
 
 $(autobahnpath):	src/autobahn
-	ls -la $@
 	@mkdir -p $(dir $@)
 	export PYTHONPATH=$(dir $@); cd $</autobahn; python setup.py install --prefix=/usr/local
 
