@@ -409,15 +409,16 @@ splunk:			python				\
 
 
 
-# WebSockets.  Build 2 implementations which seem good.
+# WebSockets.  Build and install 2 implementations which seem good.
 .PHONY: websockets
 websockets:		autobahn			\
 			ws4py
 
 # AutobahnPython.  Another WebSockets foundation; evidently highly respected.
-# Requires twisted, also highly respected.    See src/autobahn/examples.
-.PHONY: autobahn twisted
+# Requires twisted, also highly respected.  See src/autobahn/examples and
+# src/ws4py/examples.
 
+.PHONY: autobahn twisted
 # autobahn-0.5.0-py2.7.egg
 autobahnurl	= git://github.com/tavendo/AutobahnPython.git
 autobahnvers	= 0.5.0
