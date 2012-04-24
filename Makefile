@@ -18,6 +18,9 @@ bazaar			= /usr/local/bin/bzr
 mercurial		= /usr/local/bin/hg
 aspell			= /usr/local/bin/aspell
 gnutls			= /usr/local/bin/gnutls-serv
+autoconf		= /usr/local/bin/autoconf
+automake		= /usr/local/bin/automake
+libtool			= /usr/local/bin/glibtool
 
 osname			= macosx
 osvers			= 10.7
@@ -217,6 +220,15 @@ $(aspell):		$(homebrew)
 $(gnutls):		$(homebrew)
 	brew install gnutls && touch $@
 
+$(autoconf):		$(homebrew)
+	brew install autoconf && touch $@
+
+$(automake):		$(homebrew)
+	brew install automake && touch $@
+
+$(libtool):		$(homebrew)
+	brew install libtool && touch $@
+
 # emacs 24.0	-- editor and any necessary components
 #
 #     Clone and/or pull pjkundert/emacs-prelude, branch 'hardcons', and
@@ -412,7 +424,110 @@ splunk:			python				\
 # WebSockets.  Build and install 2 implementations which seem good.
 .PHONY: websockets
 websockets:		autobahn			\
-			ws4py
+			ws4py				\
+			mongrel2
+
+
+# Mongrel2; 0MQ-backed HTTP/WebSockets async web server
+# (builds by default for installation in /usr/local)
+
+mongrel2url	= git://github.com/pjkundert/mongrel2
+mongrel2branch	= develop
+mongrel2branch	= feature/anyzmq
+mongrel2path	= /usr/local/bin/mongrel2
+.PHONY: mongrel2
+src/mongrel2:		FORCE libzmq3 sqlite3
+	@if [ ! -d $@ ]; then				\
+	    git clone $(mongrel2url) $@;		\
+	fi
+	cd $@; git checkout $(mongrel2branch)
+
+$(mongrel2path):	src/mongrel2
+	cd $< && make all && make install
+
+mongrel2:	$(mongrel2path)
+
+# Sqlite3; assume it is available
+.PHONY: sqlite3
+sqlite3:
+
+# 0MQ 3.1 API; Supplied either by ZeroMQ or Crossroads-IO
+libzmq3url	= git://github.com/zeromq/libzmq
+libzmq3ver	= 3.1.1
+libzmq3branch	= master
+libzmq3path	= /usr/local/lib/libzmq.3.dylib
+.PHONY: libzmq3
+
+src/libzmq:		FORCE $(autoconf) $(automake) $(libtool)
+	@if [ ! -d $@ ]; then				\
+	    git clone $(libzmq3url) $@;			\
+	fi
+	cd $@; git checkout $(libzmq3branch)
+
+$(libzmq3path):		src/libzmq
+	@if [ ! -r $</configure ]; then			\
+	    cd $<; ./autogen.sh;			\
+	fi
+	@if [ ! -r $</Makefile ]; then			\
+	    cd $<;./configure --prefix=/usr/local;	\
+	fi
+	cd $< && make V=1 && make install && touch $@
+
+libzmq3:		$(libzmq3path)
+
+
+# 0MQ 2.1 API; For backwards-compatibility testing changes (eg. to mongrel2)
+libzmq2url	= git://github.com/zeromq/zeromq2-x
+libzmq2ver	= 2.1.11
+libzmq2branch	= master
+libzmq2path	= /usr/local/lib/libzmq.1.dylib
+.PHONY: libzmq2
+
+src/zeromq2-x:		FORCE $(autoconf) $(automake) $(libtool)
+	@if [ ! -d $@ ]; then				\
+	    git clone $(libzmq2url) $@;			\
+	fi
+	cd $@; git checkout $(libzmq2branch)
+
+$(libzmq2path):		src/zeromq2-x
+	@if [ ! -r $</configure ]; then			\
+	    cd $<; ./autogen.sh;			\
+	fi
+	@if [ ! -r $</Makefile ]; then			\
+	    cd $<;./configure --prefix=/usr/local;	\
+	fi
+	cd $< && make V=1 && make install && touch $@
+
+libzmq2:		$(libzmq2path)
+
+
+# Python 0MQ 2.1/3.1 bindings.  Requires cython to compile.
+pyzmqurl	= git://github.com/zeromq/pyzmq
+pyzmqvers	= 2.1.11
+pyzmqbranch	= v$(pyzmqvers)
+pyzmqpath	= /usr/local/lib/python$(pyvers)/site-packages/pyzmq-$(pyzmqvers)-py$(pyvers).egg-info
+.PHONY: pyzmq
+
+src/pyzmq:		FORCE cython libzmq3
+	@if [ ! -d $@ ]; then				\
+	    git clone $(pyzmqurl) $@;			\
+	fi
+	cd $@; git checkout $(pyzmqbranch)
+
+$(pyzmqpath):		src/pyzmq
+	cd $<						\
+	  && python setup.py configure --zmq=/usr/local	\
+	  && python setup.py build			\
+	  && python setup.py install --prefix=/usr/local
+
+pyzmq:			$(pyzmqpath)
+
+pyzmq-test:		src/pyzmq FORCE
+	cd $<						\
+	  && python setup.py configure --zmq=/usr/local	\
+	  && python setup.py build_ext --inplace	\
+	  && python setup.py test
+
 
 # AutobahnPython.  Another WebSockets foundation; evidently highly respected.
 # Requires twisted, also highly respected.  See src/autobahn/examples and
