@@ -433,7 +433,6 @@ websockets:		autobahn			\
 
 mongrel2url	= git://github.com/pjkundert/mongrel2
 mongrel2branch	= develop
-mongrel2branch	= feature/anyzmq
 mongrel2path	= /usr/local/bin/mongrel2
 .PHONY: mongrel2
 src/mongrel2:		FORCE libzmq3 sqlite3
