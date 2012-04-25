@@ -28,37 +28,6 @@ osarch			= intel
 
 pyvers			= $(shell python --version 2>&1 | sed -ne '/Python/ s/.*\([0-9]\.[0-9]\)\..*/\1/p' )
 
-gitpyvers		= 0.3.2.RC1
-#gitpyurl		= git://github.com/gitpython-developers/GitPython.git
-gitpyurl		= git://github.com/pjkundert/GitPython.git
-gitpybranch		= 0.3
-gitpypath		= /usr/local/lib/python$(pyvers)/site-packages/GitPython-$(gitpyvers)-py$(pyvers).egg
-
-ittyvers		= 0.8.1
-ittypath		= /usr/local/lib/python$(pyvers)/site-packages/itty-$(ittyvers)-py$(pyvers).egg-info
-
-webpyvers		= 0.37
-#webpyurl		= git://github.com/webpy/webpy.git
-webpyurl		= git://github.com/pjkundert/webpy.git
-webpypath		= /usr/local/lib/python$(pyvers)/site-packages/web.py-$(webpyvers)-py$(pyvers).egg-info
-
-wsgilogvers		= 0.3
-wsgilogurl		= https://bitbucket.org/lcrees/wsgilog
-wsgilogpath		= /usr/local/lib/python$(pyvers)/site-packages/wsgilog-$(wsgilogvers)-py$(pyvers).egg
-
-nosevers		= 1.1.3.dev
-nosepath		= /usr/local/lib/python$(pyvers)/site-packages/nose-$(nosevers)-py$(pyvers).egg
-noseurl			= git://github.com/nose-devs/nose.git
-
-mockvers		= 0.5.0
-mockfile		= mock-$(mockvers).zip
-mockurl			= http://mock.googlecode.com/files/$(mockfile)
-mockpath		= /usr/local/lib/python$(pyvers)/site-packages/mock-$(mockvers)-py$(pyvers).egg
-
-splunksdkvers		= 0.9.0
-splunksdkpath		= /usr/local/lib/python$(pyvers)/site-packages/splunk-$(splunksdkvers)-py$(pyvers).egg
-splunksdkurl		= https://github.com/splunk/splunk-sdk-python.git
-
 #
 # Target to allow the printing of 'make' variables, eg:
 #
@@ -69,18 +38,18 @@ print-%:
 	@echo $*\'s origin is $(origin $*)
 
 
-.PHONY: FORCE all personal
+.PHONY: FORCE all
 all:			personal			\
 			git				\
 			bash				\
 			iterm				\
 			emacs				\
-			$(homebrew)			\
 			python				\
 			python-modules			\
 			tex
 
 # personal	-- Collect and store personal information in Makefile.personal
+.PHONY: personal	
 personal:		Makefile.personal		\
 			.authinfo			\
 			.bash_personal			\
@@ -193,13 +162,17 @@ Library/Preferences/com.googlecode.iterm2.plist:\
 
 # homebrew	-- required to build various applications
 #
-#     Tests for existence and offer to install if necessary.  Always
-# ensure that targets are marked as up-to-date by using, in case brew
-# is ever re-installed, by including '... && touch <target>':
+#     Tests for existence and installs if necessary.  Always ensures that
+# targets are marked as up-to-date by using, in case homebrew is ever
+# re-installed, by including '... && touch -c <target>':
 #
 #     /usr/local/bin/<target>:	$(homebrew)
-#         brew install <target> && touch $@
-
+#         brew install <target> || brew list <target> && touch -c $@
+# 
+# This pattern will succeed in touching the target up-to-date iff and only iff
+# *either* the target is successfully isntalled, *or* if it is already
+# installed.  This complexity is necessary because brew install <target> will
+# report failure if already installed.
 /usr/local/bin/brew:
 	@if read -p "Install homebrew? (y/n)" R		\
 		&& [[ "$${R##[Yy]*}" == "" ]]; then	\
@@ -209,25 +182,25 @@ Library/Preferences/com.googlecode.iterm2.plist:\
 	fi
 
 $(bazaar):		$(homebrew)
-	brew install bazaar && touch $@
+	brew install bazaar || brew update bazaar || brew list bazaar && touch -c $@
 
 $(mercurial):		$(homebrew)
-	brew install mercurial && touch $@
+	brew install mercurial || brew update mercurial || brew list mercurial && touch -c $@
 
 $(aspell):		$(homebrew)
-	brew install aspell --lang=en && touch $@
+	brew install aspell --lang=en || brew update aspell || brew list aspell && touch -c $@
 
 $(gnutls):		$(homebrew)
-	brew install gnutls && touch $@
+	brew install gnutls || brew update gnutls || brew list gnutls && touch -c $@
 
 $(autoconf):		$(homebrew)
-	brew install autoconf && touch $@
+	brew install autoconf || brew update autoconf || brew list autoconf && touch -c $@
 
 $(automake):		$(homebrew)
-	brew install automake && touch $@
+	brew install automake || brew update automake || brew list automake && touch -c $@
 
 $(libtool):		$(homebrew)
-	brew install libtool && touch $@
+	brew install libtool || brew update libtool || brew list libtool && touch -c $@
 
 # emacs 24.0	-- editor and any necessary components
 #
@@ -256,7 +229,7 @@ $(emacs):		$(bazaar)			\
 			$(aspell)			\
 			$(gnutls)			\
 			$(homebrew)
-	brew install emacs --HEAD --use-git-head && touch $@
+	brew install emacs --HEAD --use-git-head || brew update emacs || brew list emacs && touch $@
 
 .emacs:			FORCE
 	@if [ -f $@ ]; then				\
@@ -304,6 +277,12 @@ python-modules:		git-python			\
 			splunk
 
 # GitPython	-- Python git API module "git"
+#GitPython-0.3.2.RC1-py2.7.egg
+gitpyvers		= 0.3.2.RC1
+#gitpyurl		= git://github.com/gitpython-developers/GitPython.git
+gitpyurl		= git://github.com/pjkundert/GitPython.git
+gitpybranch		= 0.3
+gitpypath		= /usr/local/lib/python$(pyvers)/site-packages/GitPython-$(gitpyvers)-py$(pyvers).egg
 .PHONY: git-python
 src/git-python:		FORCE
 	@if [ ! -d $@ ]; then				\
@@ -318,7 +297,10 @@ $(gitpypath):		src/git-python
 
 git-python:		python nose mock $(gitpypath)
 
-# itty		-- Python webserver module "itty"
+# itty	-- Python webserver module "itty"; Not reliable...
+# itty-0.8.1-py2.7.egg-info
+ittyvers		= 0.8.1
+ittypath		= /usr/local/lib/python$(pyvers)/site-packages/itty-$(ittyvers)-py$(pyvers).egg-info
 src/itty:		FORCE
 	@if [ ! -d $@ ]; then				\
 	    git clone git://github.com/pjkundert/itty.git $@; \
@@ -332,6 +314,11 @@ $(ittypath):		src/itty
 itty:			python $(ittypath)
 
 # web.py	-- Pytnon webserver module "web"
+# web.py-0.37-py2.7.egg-info
+webpyvers		= 0.37
+#webpyurl		= git://github.com/webpy/webpy.git
+webpyurl		= git://github.com/pjkundert/webpy.git
+webpypath		= /usr/local/lib/python$(pyvers)/site-packages/web.py-$(webpyvers)-py$(pyvers).egg-info
 .PHONY: webpy
 src/webpy:		FORCE
 	@if [ ! -d $@ ]; then				\
@@ -346,6 +333,10 @@ $(webpypath):		src/webpy
 webpy:			python $(webpypath)
 
 # wsgilog	-- Needed for logging in web.py webservers
+# wsgilog-0.3-py2.7.egg
+wsgilogvers		= 0.3
+wsgilogurl		= https://bitbucket.org/lcrees/wsgilog
+wsgilogpath		= /usr/local/lib/python$(pyvers)/site-packages/wsgilog-$(wsgilogvers)-py$(pyvers).egg
 .PHONY: wsgilog
 
 src/wsgilog:		$(mercurial) FORCE
@@ -361,6 +352,10 @@ $(wsgilogpath):		src/wsgilog
 wsgilog:		python $(wsgilogpath)
 
 # nose		-- Python unittest helper nosetests (like py.test)
+# nose-1.1.3.dev-py2.7.egg
+nosevers		= 1.1.3.dev
+nosepath		= /usr/local/lib/python$(pyvers)/site-packages/nose-$(nosevers)-py$(pyvers).egg
+noseurl			= git://github.com/nose-devs/nose.git
 .PHONY: nose
 src/nose:		FORCE
 	@if [ ! -d $@ ]; then				\
@@ -375,6 +370,11 @@ $(nosepath):		src/nose
 nose:			python $(nosepath)
 
 # mock		-- Python testing utility
+# mock-0.5.0-py2.7.egg
+mockvers		= 0.5.0
+mockfile		= mock-$(mockvers).zip
+mockurl			= http://mock.googlecode.com/files/$(mockfile)
+mockpath		= /usr/local/lib/python$(pyvers)/site-packages/mock-$(mockvers)-py$(pyvers).egg
 .PHONY: mock
 src/$(mockfile):
 	curl -o $@ $(mockurl)
@@ -388,15 +388,20 @@ $(mockpath):		src/mock-$(mockvers)
 
 mock:			python $(mockpath)
 
-# splunkpy	-- Python Splunk API
+# splunk	-- Python Splunk API
+# splunk_sdk-0.8.0-py2.7.egg-info
+splunkurl		= https://github.com/splunk/splunk-sdk-python.git
+splunkvers		= 0.8.0
+splunkbranch		= master
+splunkpath		= /usr/local/lib/python$(pyvers)/site-packages/splunk_sdk-$(splunkvers)-py$(pyvers).egg-info
 .PHONY: splunk
 src/splunk-sdk-python:	FORCE
 	@if [ ! -d $@ ]; then				\
-	    git clone $(splunksdkurl) $@;		\
+	    git clone $(splunkurl) $@;			\
 	fi
 	cd $@; git pull origin master
 
-$(splunksdkpath):	src/splunk-sdk-python
+$(splunkpath):		src/splunk-sdk-python
 	@mkdir -p $(dir $@)
 	export PYTHONPATH=$(dir $@); cd $<; python setup.py install --prefix=/usr/local
 
@@ -416,21 +421,19 @@ $(splunksdkpath):	src/splunk-sdk-python
 	fi
 
 splunk:			python				\
-			$(splunksdkpath)		\
+			$(splunkpath)			\
 			.splunkrc
 
 
 
-# WebSockets.  Build and install 2 implementations which seem good.
+# WebSockets.  Build and install mongrel2 and m2py, and 2 Python implementations
 .PHONY: websockets
 websockets:		autobahn			\
 			ws4py				\
-			mongrel2
-
+			mongrel2 m2py
 
 # Mongrel2; 0MQ-backed HTTP/WebSockets async web server
 # (builds by default for installation in /usr/local)
-
 mongrel2url	= git://github.com/pjkundert/mongrel2
 mongrel2branch	= develop
 mongrel2path	= /usr/local/bin/mongrel2
@@ -449,6 +452,76 @@ mongrel2:	$(mongrel2path)
 # Sqlite3; assume it is available
 .PHONY: sqlite3
 sqlite3:
+
+# Mongrel2 Python 0MQ backend module
+# m2py-1.7.5-py2.7.egg
+m2pyvers	= 1.7.5
+m2pypath	= /usr/local/lib/python$(pyvers)/site-packages/m2py-$(m2pyvers)-py$(pyvers).egg
+.PHONY: m2py
+
+src/mongrel2/examples/python:				\
+			src/mongrel2 storm pyrepl simplejson nose
+
+$(m2pypath):		src/mongrel2/examples/python
+	cd $< && python setup.py install --prefix=/usr/local
+
+m2py:			$(m2pypath)
+
+# storm	-- Python ORM module
+#storm-0.19.0.99-py2.7-macosx-10.7-intel.egg
+stormurl	= lp:storm
+stormvers	= 0.19.0.99
+stormpath	= /usr/local/lib/python$(pyvers)/site-packages/storm-$(stormvers)-py$(pyvers)-$(osname)-$(osvers)-$(osarch).egg
+.PHONY: storm
+src/storm:		$(bazaar) FORCE
+	@if [ ! -d $@ ]; then				\
+	    bzr branch $(stormurl) $@;			\
+	fi
+
+$(stormpath):		src/storm
+	@mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $<; python setup.py install --prefix=/usr/local
+
+storm:			python $(stormpath)
+
+# pyrepl -- Python REPL
+# pyrepl-0.8.2-py2.7.egg
+pyreplurl	= http://codespeak.net/svn/pyrepl/trunk/pyrepl
+pyreplvers	= 0.8.2
+pyreplpath	= /usr/local/lib/python$(pyvers)/site-packages/pyrepl-$(pyreplvers)-py$(pyvers).egg
+
+.PHONY: pyrepl
+src/pyrepl:		$(bazaar) FORCE
+	@if [ ! -d $@ ]; then				\
+	    svn co $(pyreplurl) $@;			\
+	fi
+
+$(pyreplpath):		src/pyrepl
+	@mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $<; python setup.py install --prefix=/usr/local
+
+pyrepl:			python $(pyreplpath)
+
+# simplejson -- Python REPL
+# simplejson-2.5.0-py2.7.egg-info
+simplejsonurl	= git://github.com/simplejson/simplejson
+simplejsonvers	= 2.5.0
+simplejsonbranch= v$(simplejsonvers)
+simplejsonpath	= /usr/local/lib/python$(pyvers)/site-packages/simplejson-$(simplejsonvers)-py$(pyvers).egg-info
+
+.PHONY: simplejson
+src/simplejson:		$(bazaar) FORCE
+	@if [ ! -d $@ ]; then				\
+	    git clone $(simplejsonurl) $@;		\
+	fi
+	cd $@; git checkout $(simplejsonbranch)
+
+$(simplejsonpath):	src/simplejson
+	@mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $<; python setup.py install --prefix=/usr/local
+
+simplejson:		python $(simplejsonpath)
+
 
 # 0MQ 3.1 API; Supplied either by ZeroMQ or Crossroads-IO
 libzmq3url	= git://github.com/zeromq/libzmq
@@ -554,9 +627,6 @@ autobahn:		python $(autobahnpath)
 twistedvers	= 12.0.0
 twistedrev	= r34238
 twistedurl	= svn://svn.twistedmatrix.com/svn/Twisted/tags/releases/twisted-$(twistedvers)
-osname		= macosx
-osvers		= 10.7
-osarch		= intel
 twistedpath	= /usr/local/lib/python$(pyvers)/site-packages/Twisted-$(twistedvers)_$(twistedrev)-py$(pyvers)-$(osname)-$(osvers)-$(osarch).egg
 
 src/twisted:		FORCE
