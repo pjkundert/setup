@@ -427,10 +427,13 @@ splunk:			python				\
 
 
 # WebSockets.  Build and install mongrel2 and m2py, and 2 Python implementations
+# Also, download Socket.IO, which appears to be the definitive cross-browser 
+# Javascript WebSockets implementation, with fallbacks to Flash sockets and AJAX.
 .PHONY: websockets
 websockets:		autobahn			\
 			ws4py				\
-			mongrel2 m2py
+			mongrel2 m2py			\
+			socketio
 
 # Mongrel2; 0MQ-backed HTTP/WebSockets async web server
 # (builds by default for installation in /usr/local)
@@ -655,8 +658,19 @@ src/gevent-socketio:	FORCE
 	fi
 	cd $@; git pull origin master
 
-socketio:
 paste:
+
+.PHONY: socketio
+socketiourl	= git://github.com/LearnBoost/socket.io
+
+src/socket.io:
+	@if [ ! -d $@ ]; then				\
+	    git clone $(socketiourl) $@;		\
+	fi
+	cd $@; git pull origin master
+
+socketio:		src/socket.io
+
 
 # Gevent.  Latest tag 1.0b2; Last stable tag 0.13.1 (no good).  Depends on cython
 # gevent-1.0dev-py2.7-macosx-10.7-intel.egg
