@@ -430,10 +430,13 @@ splunk:			python				\
 # Also, download Socket.IO, which appears to be the definitive cross-browser 
 # Javascript WebSockets implementation, with fallbacks to Flash sockets and AJAX.
 .PHONY: websockets
-websockets:		autobahn			\
-			ws4py				\
-			mongrel2 m2py			\
+websockets:		mongrel2 m2py			\
 			socketio
+
+# WebSockets libraries no longer used.
+#			autobahn
+#			ws4py
+
 
 # Mongrel2; 0MQ-backed HTTP/WebSockets async web server
 # (builds by default for installation in /usr/local)
@@ -626,6 +629,8 @@ $(autobahnpath):	src/autobahn
 
 autobahn:		python $(autobahnpath)
 
+# Twisted -- Python async I/O.
+# FIX: Revision number changes on each checkin; must deduce?
 # Twisted-12.0.0_r34238-py2.7-macosx-10.7-intel.egg
 twistedvers	= 12.0.0
 twistedrev	= r34238
