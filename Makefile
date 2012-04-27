@@ -12,19 +12,100 @@
 #        https://raw.github.com/<user>/<repo>/<branch>/<filename>
 #
 
-homebrew		= /usr/local/bin/brew
-emacs			= /usr/local/bin/emacs
-bazaar			= /usr/local/bin/bzr
-mercurial		= /usr/local/bin/hg
-aspell			= /usr/local/bin/aspell
-gnutls			= /usr/local/bin/gnutls-serv
-autoconf		= /usr/local/bin/autoconf
-automake		= /usr/local/bin/automake
-libtool			= /usr/local/bin/glibtool
+# Sometimes, /bin/sh is /bin/ash or something that doesn't understand:
+# 
+#     if [[ ... ]]; then
+SHELL			= /bin/bash
 
-osname			= macosx
-osvers			= 10.7
-osarch			= intel
+SYSTEM			= $(shell uname -s)
+ifeq ($(SYSTEM),Linux)
+    # Linux.  Use apt-get to install (assume Debian or Ubuntu...)
+    homebrew		= /usr/bin/apt-get
+    emacs		= /usr/bin/emacs
+    bazaar		= /usr/bin/bzr
+    mercurial		= /usr/bin/hg
+    aspell		= /usr/bin/aspell
+    gnutls		= /usr/bin/gnutls-serv
+    autoconf		= /usr/bin/autoconf
+    automake		= /usr/bin/automake
+    libtool		= /usr/bin/glibtool
+
+    osname		= linux
+    osvers		= 1.0
+    osarch		= intel
+
+$(bazaar):
+	sudo apt-get -u install bzr
+
+$(mercurial):
+	sudo apt-get -u install mercurial
+
+$(aspell):
+	sudo apt-get -u install aspell
+
+$(gnutls):
+	sudo apt-get -u install gnutls
+
+$(autoconf):
+	sudo apt-get -u install autoconf
+
+$(automake):
+	sudo apt-get -u install automake
+
+$(libtool):
+	sudo apt-get -u install libtool
+
+$(emacs):		$(bazaar)			\
+			$(aspell)			\
+			$(gnutls)
+	$(error Cannot install emacs24 yet)
+else
+  ifeq ($(SYSTEM),Darwin)
+    homebrew		= /usr/local/bin/brew
+    emacs		= /usr/local/bin/emacs
+    bazaar		= /usr/local/bin/bzr
+    mercurial		= /usr/local/bin/hg
+    aspell		= /usr/local/bin/aspell
+    gnutls		= /usr/local/bin/gnutls-serv
+    autoconf		= /usr/local/bin/autoconf
+    automake		= /usr/local/bin/automake
+    libtool		= /usr/local/bin/glibtool
+
+    osname		= macosx
+    osvers		= 10.7
+    osarch		= intel
+
+$(bazaar):		$(homebrew)
+	brew install bazaar || brew update bazaar || brew list bazaar && touch -c $@
+
+$(mercurial):		$(homebrew)
+	brew install mercurial || brew update mercurial || brew list mercurial && touch -c $@
+
+$(aspell):		$(homebrew)
+	brew install aspell --lang=en || brew update aspell || brew list aspell && touch -c $@
+
+$(gnutls):		$(homebrew)
+	brew install gnutls || brew update gnutls || brew list gnutls && touch -c $@
+
+$(autoconf):		$(homebrew)
+	brew install autoconf || brew update autoconf || brew list autoconf && touch -c $@
+
+$(automake):		$(homebrew)
+	brew install automake || brew update automake || brew list automake && touch -c $@
+
+$(libtool):		$(homebrew)
+	brew install libtool || brew update libtool || brew list libtool && touch -c $@
+
+$(emacs):		$(bazaar)			\
+			$(aspell)			\
+			$(gnutls)			\
+			$(homebrew)
+	brew install emacs --HEAD --use-git-head || brew update emacs || brew list emacs && touch $@
+
+  else
+    $(error Unknown SYSTEM: $(SYSTEM))
+  endif
+endif
 
 pyvers			= $(shell python --version 2>&1 | sed -ne '/Python/ s/.*\([0-9]\.[0-9]\)\..*/\1/p' )
 
@@ -39,7 +120,8 @@ print-%:
 
 
 .PHONY: FORCE all
-all:			personal			\
+all:			test				\
+			personal			\
 			git				\
 			bash				\
 			iterm				\
@@ -47,6 +129,24 @@ all:			personal			\
 			python				\
 			python-modules			\
 			tex
+
+# test		-- validate certain assumpsion
+test:			/usr/local
+
+# Confirm that /usr/local has 'admin' group write permissions
+/usr/local:		FORCE
+	@if [[ "$(shell ls -ld /usr/local | cut -f 4 -d ' ')" != "admin" ]]; then \
+	    echo -n "/usr/local should be drwxrwxr-x root admin; found:";  \
+	    ls -ld /usr/local;						\
+	    if read -p "Fix /usr/local permissions? (y/n)" R	\
+	      && [[ "$${R##[Yy]*}" == "" ]]; then		\
+	        echo "Fixing /usr/local";			\
+		sudo find /usr/local -not -group 'admin' -a	\
+		    -exec chgrp admin {} \; -a			\
+		    -exec chmod g+w {} \; -print;		\
+	    fi							\
+	fi
+
 
 # personal	-- Collect and store personal information in Makefile.personal
 .PHONY: personal	
@@ -181,27 +281,6 @@ Library/Preferences/com.googlecode.iterm2.plist:\
 	    echo "Please install homebrew."; false;	\
 	fi
 
-$(bazaar):		$(homebrew)
-	brew install bazaar || brew update bazaar || brew list bazaar && touch -c $@
-
-$(mercurial):		$(homebrew)
-	brew install mercurial || brew update mercurial || brew list mercurial && touch -c $@
-
-$(aspell):		$(homebrew)
-	brew install aspell --lang=en || brew update aspell || brew list aspell && touch -c $@
-
-$(gnutls):		$(homebrew)
-	brew install gnutls || brew update gnutls || brew list gnutls && touch -c $@
-
-$(autoconf):		$(homebrew)
-	brew install autoconf || brew update autoconf || brew list autoconf && touch -c $@
-
-$(automake):		$(homebrew)
-	brew install automake || brew update automake || brew list automake && touch -c $@
-
-$(libtool):		$(homebrew)
-	brew install libtool || brew update libtool || brew list libtool && touch -c $@
-
 # emacs 24.0	-- editor and any necessary components
 #
 #     Clone and/or pull pjkundert/emacs-prelude, branch 'hardcons', and
@@ -224,12 +303,6 @@ emacs-24:		$(emacs)			\
 	@if ! emacs --version | grep -q "GNU Emacs 24"; then \
 	    echo "Version 24 of emacs needed; found: $(shell emacs --version | head -1 )"; \
 	fi
-
-$(emacs):		$(bazaar)			\
-			$(aspell)			\
-			$(gnutls)			\
-			$(homebrew)
-	brew install emacs --HEAD --use-git-head || brew update emacs || brew list emacs && touch $@
 
 .emacs:			FORCE
 	@if [ -f $@ ]; then				\
