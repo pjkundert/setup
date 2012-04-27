@@ -17,6 +17,19 @@
 #     if [[ ... ]]; then
 SHELL			= /bin/bash
 
+
+.PHONY: FORCE all
+all:			test				\
+			personal			\
+			git				\
+			bash				\
+			iterm				\
+			emacs				\
+			python				\
+			python-modules			\
+			tex
+
+
 SYSTEM			= $(shell uname -s)
 ifeq ($(SYSTEM),Linux)
     # Linux.  Use apt-get to install (assume Debian or Ubuntu...)
@@ -119,25 +132,16 @@ print-%:
 	@echo $*\'s origin is $(origin $*)
 
 
-.PHONY: FORCE all
-all:			test				\
-			personal			\
-			git				\
-			bash				\
-			iterm				\
-			emacs				\
-			python				\
-			python-modules			\
-			tex
-
 # test		-- validate certain assumpsion
 test:			/usr/local
 
 # Confirm that /usr/local has 'admin' group write permissions
 /usr/local:		FORCE
-	@if [[ "$(shell ls -ld /usr/local | cut -f 4 -d ' ')" != "admin" ]]; then \
-	    echo -n "/usr/local should be drwxrwxr-x root admin; found:";  \
-	    ls -ld /usr/local;						\
+	@if [[ "$(shell ls -ld /usr/local 			\
+	         | python -c 'print raw_input().split()[3]')"	\
+	      != "admin" ]]; then				\
+	    echo -n "/usr/local should group admin; found: ";	\
+	    ls -ld /usr/local;					\
 	    if read -p "Fix /usr/local permissions? (y/n)" R	\
 	      && [[ "$${R##[Yy]*}" == "" ]]; then		\
 	        echo "Fixing /usr/local";			\
