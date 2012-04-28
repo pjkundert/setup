@@ -37,21 +37,24 @@ ifeq ($(SYSTEM),Linux)
     emacs		= /usr/bin/emacs
     bazaar		= /usr/bin/bzr
     mercurial		= /usr/bin/hg
+    subversion		= /usr/bin/svn
     aspell		= /usr/bin/aspell
     gnutls		= /usr/bin/gnutls-serv
     autoconf		= /usr/bin/autoconf
     automake		= /usr/bin/automake
-    libtool		= /usr/bin/glibtool
+    libtool		= /usr/bin/libtool
 
     osname		= linux
-    osvers		= 1.0
-    osarch		= intel
+    osarch		= i686
 
 $(bazaar):
 	sudo apt-get -u install bzr
 
 $(mercurial):
 	sudo apt-get -u install mercurial
+
+$(subversion):
+	sudo apt-get -u install subversion
 
 $(aspell):
 	sudo apt-get -u install aspell
@@ -72,20 +75,30 @@ $(emacs):		$(bazaar)			\
 			$(aspell)			\
 			$(gnutls)
 	$(error Cannot install emacs24 yet)
+
+.PHONY: sqlite3
+
+/usr/bin/sqlite3:
+	sudo apt-get -u install sqlite3
+
+/usr/lib/libsqlite3.a:
+	sudo apt-get -u install sqlite3 libsqlite3-dev
+
+sqlite3:		/usr/bin/sqlite3 /usr/lib/libsqlite3.a
 else
   ifeq ($(SYSTEM),Darwin)
     homebrew		= /usr/local/bin/brew
     emacs		= /usr/local/bin/emacs
     bazaar		= /usr/local/bin/bzr
     mercurial		= /usr/local/bin/hg
+    subversion		= /usr/local/bin/svn
     aspell		= /usr/local/bin/aspell
     gnutls		= /usr/local/bin/gnutls-serv
     autoconf		= /usr/local/bin/autoconf
     automake		= /usr/local/bin/automake
     libtool		= /usr/local/bin/glibtool
 
-    osname		= macosx
-    osvers		= 10.7
+    osname		= macosx-10.7
     osarch		= intel
 
 $(bazaar):		$(homebrew)
@@ -93,6 +106,9 @@ $(bazaar):		$(homebrew)
 
 $(mercurial):		$(homebrew)
 	brew install mercurial || brew update mercurial || brew list mercurial && touch -c $@
+
+$(subversion):		$(homebrew)
+	brew install subversion || brew update subversion || brew list subversion && touch -c $@
 
 $(aspell):		$(homebrew)
 	brew install aspell --lang=en || brew update aspell || brew list aspell && touch -c $@
@@ -115,12 +131,21 @@ $(emacs):		$(bazaar)			\
 			$(homebrew)
 	brew install emacs --HEAD --use-git-head || brew update emacs || brew list emacs && touch $@
 
+.PHONY: sqlite3
+# Sqlite3 is already install on OS-X
+sqlite3:
+
   else
     $(error Unknown SYSTEM: $(SYSTEM))
   endif
 endif
 
 pyvers			= $(shell python --version 2>&1 | sed -ne '/Python/ s/.*\([0-9]\.[0-9]\)\..*/\1/p' )
+ifeq ($(pyvers),2.7)
+    pypkgs		= site-packages
+else
+    pypkgs		= dist-packages
+endif
 
 #
 # Target to allow the printing of 'make' variables, eg:
@@ -336,7 +361,7 @@ emacs-24:		$(emacs)			\
 # python
 #
 #     Various required python extension.  Source in ~/src/..., install
-# into /usr/local/python#.#/site-packages/.
+# into /usr/local/python#.#/$(pypkgs)/.
 
 .PHONY: python
 
@@ -359,7 +384,7 @@ gitpyvers		= 0.3.2.RC1
 #gitpyurl		= git://github.com/gitpython-developers/GitPython.git
 gitpyurl		= git://github.com/pjkundert/GitPython.git
 gitpybranch		= 0.3
-gitpypath		= /usr/local/lib/python$(pyvers)/site-packages/GitPython-$(gitpyvers)-py$(pyvers).egg
+gitpypath		= /usr/local/lib/python$(pyvers)/$(pypkgs)/GitPython-$(gitpyvers)-py$(pyvers).egg
 .PHONY: git-python
 src/git-python:		FORCE
 	@if [ ! -d $@ ]; then				\
@@ -377,7 +402,7 @@ git-python:		python nose mock $(gitpypath)
 # itty	-- Python webserver module "itty"; Not reliable...
 # itty-0.8.1-py2.7.egg-info
 ittyvers		= 0.8.1
-ittypath		= /usr/local/lib/python$(pyvers)/site-packages/itty-$(ittyvers)-py$(pyvers).egg-info
+ittypath		= /usr/local/lib/python$(pyvers)/$(pypkgs)/itty-$(ittyvers)-py$(pyvers).egg-info
 src/itty:		FORCE
 	@if [ ! -d $@ ]; then				\
 	    git clone git://github.com/pjkundert/itty.git $@; \
@@ -395,7 +420,7 @@ itty:			python $(ittypath)
 webpyvers		= 0.37
 #webpyurl		= git://github.com/webpy/webpy.git
 webpyurl		= git://github.com/pjkundert/webpy.git
-webpypath		= /usr/local/lib/python$(pyvers)/site-packages/web.py-$(webpyvers)-py$(pyvers).egg-info
+webpypath		= /usr/local/lib/python$(pyvers)/$(pypkgs)/web.py-$(webpyvers)-py$(pyvers).egg-info
 .PHONY: webpy
 src/webpy:		FORCE
 	@if [ ! -d $@ ]; then				\
@@ -413,7 +438,7 @@ webpy:			python $(webpypath)
 # wsgilog-0.3-py2.7.egg
 wsgilogvers		= 0.3
 wsgilogurl		= https://bitbucket.org/lcrees/wsgilog
-wsgilogpath		= /usr/local/lib/python$(pyvers)/site-packages/wsgilog-$(wsgilogvers)-py$(pyvers).egg
+wsgilogpath		= /usr/local/lib/python$(pyvers)/$(pypkgs)/wsgilog-$(wsgilogvers)-py$(pyvers).egg
 .PHONY: wsgilog
 
 src/wsgilog:		$(mercurial) FORCE
@@ -431,7 +456,7 @@ wsgilog:		python $(wsgilogpath)
 # nose		-- Python unittest helper nosetests (like py.test)
 # nose-1.1.3.dev-py2.7.egg
 nosevers		= 1.1.3.dev
-nosepath		= /usr/local/lib/python$(pyvers)/site-packages/nose-$(nosevers)-py$(pyvers).egg
+nosepath		= /usr/local/lib/python$(pyvers)/$(pypkgs)/nose-$(nosevers)-py$(pyvers).egg
 noseurl			= git://github.com/nose-devs/nose.git
 .PHONY: nose
 src/nose:		FORCE
@@ -451,7 +476,7 @@ nose:			python $(nosepath)
 mockvers		= 0.5.0
 mockfile		= mock-$(mockvers).zip
 mockurl			= http://mock.googlecode.com/files/$(mockfile)
-mockpath		= /usr/local/lib/python$(pyvers)/site-packages/mock-$(mockvers)-py$(pyvers).egg
+mockpath		= /usr/local/lib/python$(pyvers)/$(pypkgs)/mock-$(mockvers)-py$(pyvers).egg
 .PHONY: mock
 src/$(mockfile):
 	curl -o $@ $(mockurl)
@@ -470,7 +495,7 @@ mock:			python $(mockpath)
 splunkurl		= https://github.com/splunk/splunk-sdk-python.git
 splunkvers		= 0.8.0
 splunkbranch		= master
-splunkpath		= /usr/local/lib/python$(pyvers)/site-packages/splunk_sdk-$(splunkvers)-py$(pyvers).egg-info
+splunkpath		= /usr/local/lib/python$(pyvers)/$(pypkgs)/splunk_sdk-$(splunkvers)-py$(pyvers).egg-info
 .PHONY: splunk
 src/splunk-sdk-python:	FORCE
 	@if [ ! -d $@ ]; then				\
@@ -532,14 +557,10 @@ $(mongrel2path):	src/mongrel2
 
 mongrel2:	$(mongrel2path)
 
-# Sqlite3; assume it is available
-.PHONY: sqlite3
-sqlite3:
-
 # Mongrel2 Python 0MQ backend module
 # m2py-1.7.5-py2.7.egg
 m2pyvers	= 1.7.5
-m2pypath	= /usr/local/lib/python$(pyvers)/site-packages/m2py-$(m2pyvers)-py$(pyvers).egg
+m2pypath	= /usr/local/lib/python$(pyvers)/$(pypkgs)/m2py-$(m2pyvers)-py$(pyvers).egg
 .PHONY: m2py
 
 src/mongrel2/examples/python:				\
@@ -554,7 +575,7 @@ m2py:			$(m2pypath)
 #storm-0.19.0.99-py2.7-macosx-10.7-intel.egg
 stormurl	= lp:storm
 stormvers	= 0.19.0.99
-stormpath	= /usr/local/lib/python$(pyvers)/site-packages/storm-$(stormvers)-py$(pyvers)-$(osname)-$(osvers)-$(osarch).egg
+stormpath	= /usr/local/lib/python$(pyvers)/$(pypkgs)/storm-$(stormvers)-py$(pyvers)-$(osname)-$(osarch).egg
 .PHONY: storm
 src/storm:		$(bazaar) FORCE
 	@if [ ! -d $@ ]; then				\
@@ -571,7 +592,7 @@ storm:			python $(stormpath)
 # pyrepl-0.8.2-py2.7.egg
 pyreplurl	= http://codespeak.net/svn/pyrepl/trunk/pyrepl
 pyreplvers	= 0.8.2
-pyreplpath	= /usr/local/lib/python$(pyvers)/site-packages/pyrepl-$(pyreplvers)-py$(pyvers).egg
+pyreplpath	= /usr/local/lib/python$(pyvers)/$(pypkgs)/pyrepl-$(pyreplvers)-py$(pyvers).egg
 
 .PHONY: pyrepl
 src/pyrepl:		$(bazaar) FORCE
@@ -590,7 +611,7 @@ pyrepl:			python $(pyreplpath)
 simplejsonurl	= git://github.com/simplejson/simplejson
 simplejsonvers	= 2.5.0
 simplejsonbranch= v$(simplejsonvers)
-simplejsonpath	= /usr/local/lib/python$(pyvers)/site-packages/simplejson-$(simplejsonvers)-py$(pyvers).egg-info
+simplejsonpath	= /usr/local/lib/python$(pyvers)/$(pypkgs)/simplejson-$(simplejsonvers)-py$(pyvers).egg-info
 
 .PHONY: simplejson
 src/simplejson:		$(bazaar) FORCE
@@ -660,7 +681,7 @@ libzmq2:		$(libzmq2path)
 pyzmqurl	= git://github.com/zeromq/pyzmq
 pyzmqvers	= 2.1.11
 pyzmqbranch	= v$(pyzmqvers)
-pyzmqpath	= /usr/local/lib/python$(pyvers)/site-packages/pyzmq-$(pyzmqvers)-py$(pyvers).egg-info
+pyzmqpath	= /usr/local/lib/python$(pyvers)/$(pypkgs)/pyzmq-$(pyzmqvers)-py$(pyvers).egg-info
 .PHONY: pyzmq
 
 src/pyzmq:		FORCE cython libzmq3
@@ -692,7 +713,7 @@ pyzmq-test:		src/pyzmq FORCE
 # autobahn-0.5.0-py2.7.egg
 autobahnurl	= git://github.com/tavendo/AutobahnPython.git
 autobahnvers	= 0.5.0
-autobahnpath	= /usr/local/lib/python$(pyvers)/site-packages/autobahn-$(autobahnvers)-py$(pyvers).egg
+autobahnpath	= /usr/local/lib/python$(pyvers)/$(pypkgs)/autobahn-$(autobahnvers)-py$(pyvers).egg
 
 src/autobahn:		FORCE twisted
 	@if [ ! -d $@ ]; then				\
@@ -712,7 +733,7 @@ autobahn:		python $(autobahnpath)
 twistedvers	= 12.0.0
 twistedrev	= r34238
 twistedurl	= svn://svn.twistedmatrix.com/svn/Twisted/tags/releases/twisted-$(twistedvers)
-twistedpath	= /usr/local/lib/python$(pyvers)/site-packages/Twisted-$(twistedvers)_$(twistedrev)-py$(pyvers)-$(osname)-$(osvers)-$(osarch).egg
+twistedpath	= /usr/local/lib/python$(pyvers)/$(pypkgs)/Twisted-$(twistedvers)_$(twistedrev)-py$(pyvers)-$(osname)-$(osarch).egg
 
 src/twisted:		FORCE
 	@if [ ! -d $@ ]; then				\
@@ -758,7 +779,7 @@ socketio:		src/socket.io
 # gevent-1.0dev-py2.7-macosx-10.7-intel.egg
 geventurl	= https://bitbucket.org/denis/gevent
 geventvers	= 1.0b2
-geventpath	= /usr/local/lib/python$(pyvers)/site-packages/gevent-1.0dev-py$(pyvers)-$(osname)-$(osvers)-$(osarch).egg
+geventpath	= /usr/local/lib/python$(pyvers)/$(pypkgs)/gevent-1.0dev-py$(pyvers)-$(osname)-$(osarch).egg
 .PHONY: gevent
 src/gevent:		FORCE cython
 	@if [ ! -d $@ ]; then				\
@@ -793,7 +814,7 @@ cython:			$(cythonpath)
 # ws4py; A WSGI WebSockets implementation.  Works with cherrypy and/or gevent
 ws4pyurl	= git://github.com/Lawouach/WebSocket-for-Python.git
 ws4pyvers	= 0.2.1
-ws4pypath	= /usr/local/lib/python$(pyvers)/site-packages/ws4py-$(ws4pyvers)-py$(pyvers).egg
+ws4pypath	= /usr/local/lib/python$(pyvers)/$(pypkgs)/ws4py-$(ws4pyvers)-py$(pyvers).egg
 .PHONY: ws4py
 src/ws4py:		FORCE cherrypy gevent
 	@if [ ! -d $@ ]; then				\
@@ -809,7 +830,7 @@ ws4py:			python $(ws4pypath)
 
 cherrypyurl	= https://bitbucket.org/cherrypy/cherrypy
 cherrypyvers	= 3.2.2
-cherrypypath	= /usr/local/lib/python$(pyvers)/site-packages/cherrypy-$(cherrypyvers)-py$(pyvers).egg
+cherrypypath	= /usr/local/lib/python$(pyvers)/$(pypkgs)/cherrypy-$(cherrypyvers)-py$(pyvers).egg
 .PHONY: cherrypy
 src/cherrypy:		FORCE
 	@if [ ! -d $@ ]; then				\
