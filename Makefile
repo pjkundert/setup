@@ -34,7 +34,7 @@ SYSTEM			= $(shell uname -s)
 ifeq ($(SYSTEM),Linux)
     # Linux.  Use apt-get to install (assume Debian or Ubuntu...)
     homebrew		= /usr/bin/apt-get
-    emacs		= /usr/bin/emacs
+    emacs		= /usr/local/bin/emacs
     bazaar		= /usr/bin/bzr
     mercurial		= /usr/bin/hg
     subversion		= /usr/bin/svn
@@ -60,7 +60,7 @@ $(aspell):
 	sudo apt-get -u install aspell
 
 $(gnutls):
-	sudo apt-get -u install gnutls
+	sudo apt-get -u install gnutls-bin
 
 $(autoconf):
 	sudo apt-get -u install autoconf
@@ -70,11 +70,18 @@ $(automake):
 
 $(libtool):
 	sudo apt-get -u install libtool
-
-$(emacs):		$(bazaar)			\
+# Mostly from http://chrisperkins.blogspot.ca/2011/07/building-emacs-24.html
+src/emacs:		$(bazaar)			\
 			$(aspell)			\
-			$(gnutls)
-	$(error Cannot install emacs24 yet)
+			$(gnutls) 			\
+			FORCE
+	@if [ ! -d $@ ]; then				\
+	    git clone git://git.savannah.gnu.org/emacs.git $@;\
+	fi
+	sudo apt-get -u install libxpm-dev libjpeg-dev libgif-dev libtiff4-dev
+	cd $@; ./autogen.sh && ./configure --without-makeinfo --with-x-toolkit=no && make bootstrap && make
+
+$(emacs):		src/emacs
 
 .PHONY: sqlite3
 
