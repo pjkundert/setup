@@ -78,12 +78,12 @@ src/emacs:		$(bazaar)			\
 	@if [ ! -d $@ ]; then				\
 	    git clone git://git.savannah.gnu.org/emacs.git $@;\
 	fi
-	sudo apt-get -u install libncurses5-dev libxpm-dev libjpeg-dev libgif-dev libtiff4-dev libpng12-dev
-	cd $@; if [ ! -r configure ]; then ./autogen.sh; fi
-	cd $@; if [ ! -r Makefile ]; then ./configure --without-makeinfo --with-x-toolkit=no; fi
-	cd $@; make bootstrap && make
 
 $(emacs):		src/emacs
+	sudo apt-get -u install libncurses5-dev libxpm-dev libjpeg-dev libgif-dev libtiff4-dev libpng12-dev
+	cd $<; if [ ! -r configure ]; then ./autogen.sh; fi
+	cd $<; if [ ! -r Makefile ]; then ./configure --prefix=/usr/local --without-makeinfo --with-x-toolkit=no; fi
+	cd $<; make bootstrap && make && make install
 
 .PHONY: sqlite3
 
