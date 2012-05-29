@@ -828,3 +828,120 @@ cherrypy:		python $(cherrypypath)
 tex:	/usr/texbin/pdflatex
 /usr/texbin/pdflatex:
 	@echo "Require pdflatex for org-export-as-pdf; Download MacTex from http://www.tug.org/mactex/2011"
+
+.PHONY: pycrypto
+
+pycryptourl	= git://github.com/dlitz/pycrypto.git
+pycryptovers	= 2.6
+pycryptopath	= /usr/local/lib/python$(pyvers)/site-packages/pycrypto-$(pycryptovers)-py$(pyvers).egg
+
+src/pycrypto:		FORCE
+	@if [ ! -d $@ ]; then				\
+	    git clone $(pycryptourl) $@;		\
+	fi
+	cd $@; git checkout master
+
+$(pycryptopath):	src/pycrypto
+	@mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $<; python setup.py install --prefix=/usr/local
+
+pycrypto:		python $(pycryptopath)
+
+.PHONY: pyasn1
+
+pyasn1url	= :pserver:anonymous:@pyasn1.cvs.sourceforge.net:/cvsroot/pyasn1
+pyasn1vers	= 0.1.4rc0
+pyasn1path	= /usr/local/lib/python$(pyvers)/site-packages/pyasn1-$(pyasn1vers)-py$(pyvers).egg
+
+src/pyasn1:		FORCE
+	@if [ ! -d $@ ]; then				\
+	    cvs -d$(pyasn1url) login </dev/null;	\
+	    cd src; CVSROOT=$(PWD)/$@ cvs -d$(pyasn1url) -z3 co -P pyasn1;\
+	fi
+
+$(pyasn1path):	src/pyasn1
+	@mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $<; python setup.py install --prefix=/usr/local
+
+pyasn1:			python $(pyasn1path)
+
+
+.PHONY: modbus pymodbus libmodbus
+
+modbus:			pymodbus			\
+			libmodbus
+
+pymodbusurl	= git://github.com/bashwork/pymodbus.git
+pymodbusvers	= 0.9.0
+pymodbuspath	= /usr/local/lib/python$(pyvers)/site-packages/pymodbus-$(pymodbusvers)-py$(pyvers).egg
+
+src/pymodbus:		FORCE
+	@if [ ! -d $@ ]; then				\
+	    git clone $(pymodbusurl) $@;		\
+	fi
+	cd $@; git checkout master
+
+$(pymodbuspath):	src/pymodbus
+	@mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $<; python setup.py install --prefix=/usr/local
+
+pymodbus:		python pycrypto $(pymodbuspath)
+
+
+libmodbusurl	= git://github.com/stephane/libmodbus.git
+libmodbusvers	= 3.0.3
+ifeq ($(SYSTEM),Darwin)
+  libmodbuspath	= /usr/local/lib/libmodbus.la
+else
+  libmodbuspath	= /usr/local/lib/libmodbus.a
+endif
+
+src/libmodbus:		FORCE
+	@if [ ! -d $@ ]; then				\
+	    git clone $(libmodbusurl) $@;		\
+	fi
+	cd $@; git checkout master
+
+$(libmodbuspath):	src/libmodbus
+	@mkdir -p $(dir $@)
+	@if [ ! -r $</configure ]; then			\
+	    cd $<; ./autogen.sh;			\
+	fi
+	@if [ ! -r $</Makefile ]; then			\
+	    cd $<;./configure --prefix=/usr/local;	\
+	fi
+	cd $<; make && make install
+
+libmodbus:		$(libmodbuspath)
+
+.PHONY: allenbradley libpccc
+
+allenbradley:		libpccc
+
+libpcccvers	= 1.1
+libpcccbase	= libpccc-$(libpcccvers)
+libpcccfile	= $(libpcccbase).tar.gz
+libpcccurl	= http://downloads.sourceforge.net/project/libpccc/libpccc/1.1/$(libpcccfile)
+ifeq ($(SYSTEM),Darwin)
+  libpcccpath	= /usr/local/lib/libpccc.la
+else
+  libpcccpath	= /usr/local/lib/libpccc.a
+endif
+
+# libpccc -- PCCC (DF1) protocol library
+# NOTE: Installs as/by root in /usr/local/..., by default
+src/$(libpcccfile):
+	curl -vvLo $@ $(libpcccurl)
+
+src/$(libpcccbase):	src/$(libpcccfile)
+	tar xzvf $< -C src
+
+src/libpccc/configure:	src/$(libpcccbase)
+	cd $(dir $@) && ./autogen.sh && 
+
+$(libpcccpath):		src/$(libpcccbase)/Makefile
+	@mkdir -p $(dir $@)
+	cd $(dir $<); make
+	cd $(dir $<); sudo make install
+
+libpccc:		$(libpcccpath)
