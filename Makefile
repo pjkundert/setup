@@ -379,13 +379,23 @@ python:
 	    echo "Need Python 2.[67]; found: $(shell python --version 2>&1 )"; \
 	fi
 
-python-modules:		git-python			\
+python-modules:		pytest				\
+			git-python			\
 			itty				\
 			webpy				\
 			wsgilog				\
 			nose				\
 			websockets			\
 			splunk
+
+# pytest	-- py.test
+.PHONY: pytest
+pytestpath		= /usr/local/bin/py.test
+
+$(pytestpath):
+	easy_install --prefix /usr/local --install-dir /usr/local/lib/python$(pyvers)/$(pypkgs) pytest
+
+pytest:			$(pytestpath)
 
 # GitPython	-- Python git API module "git"
 #GitPython-0.3.2.RC1-py2.7.egg
@@ -859,6 +869,36 @@ tex:	/usr/texbin/pdflatex
 /usr/texbin/pdflatex:
 	@echo "Require pdflatex for org-export-as-pdf; Download MacTex from http://www.tug.org/mactex/2011"
 
+# 
+# plc	-- PLC Protocol Support
+# 
+# modbus		Modbus/TCP; Python and C support
+# allenbradley		EtherNet/IP; C support
+# dnp			DNP3; Python and C++ support
+# 
+.PHONY: plc
+
+plc:			modbus				\
+			allenbradley			\
+			dnp
+
+pymodbusurl	= git://github.com/bashwork/pymodbus.git
+pymodbusvers	= 0.9.0
+pymodbuspath	= /usr/local/lib/python$(pyvers)/site-packages/pymodbus-$(pymodbusvers)-py$(pyvers).egg
+
+src/pymodbus:		FORCE
+	@if [ ! -d $@ ]; then				\
+	    git clone $(pymodbusurl) $@;		\
+	fi
+	cd $@; git checkout master
+
+$(pymodbuspath):	src/pymodbus pycrypto pyasn1
+	@mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $<; python setup.py install --prefix=/usr/local
+
+pymodbus:		python $(pymodbuspath)
+
+
 .PHONY: pycrypto
 
 pycryptourl	= git://github.com/dlitz/pycrypto.git
@@ -900,22 +940,6 @@ pyasn1:			python $(pyasn1path)
 
 modbus:			pymodbus			\
 			libmodbus
-
-pymodbusurl	= git://github.com/bashwork/pymodbus.git
-pymodbusvers	= 0.9.0
-pymodbuspath	= /usr/local/lib/python$(pyvers)/site-packages/pymodbus-$(pymodbusvers)-py$(pyvers).egg
-
-src/pymodbus:		FORCE
-	@if [ ! -d $@ ]; then				\
-	    git clone $(pymodbusurl) $@;		\
-	fi
-	cd $@; git checkout master
-
-$(pymodbuspath):	src/pymodbus
-	@mkdir -p $(dir $@)
-	export PYTHONPATH=$(dir $@); cd $<; python setup.py install --prefix=/usr/local
-
-pymodbus:		python pycrypto $(pymodbuspath)
 
 
 libmodbusurl	= git://github.com/stephane/libmodbus.git
@@ -975,3 +999,34 @@ $(libpcccpath):		src/$(libpcccbase)/Makefile
 	cd $(dir $<); sudo make install
 
 libpccc:		$(libpcccpath)
+
+
+.PHONY: dnp dnp3
+
+
+dnp3url		= git://github.com/gec/dnp3
+dnp3vers	= 1.0.0
+dnp3path	= /usr/local/lib/python$(pyvers)/site-packages/pyasn1-$(dnp3vers)-py$(pyvers).egg
+
+dnp:			dnp3
+
+src/dnp3:		FORCE
+	@if [ ! -d $@ ]; then				\
+	    git clone $(dnp3url) $@;			\
+	fi
+	cd $@; git checkout master
+
+$(dnp3path):		src/dnp3
+	@mkdir -p $(dir $@)
+	@if [ ! -r $</configure ]; then			\
+	    cd $<; autoconf;				\
+	fi
+	@if [ ! -r $</Makefile ]; then			\
+	    cd $<;./configure --prefix=/usr/local;	\
+	fi
+	cd $<; make && make check && make install
+
+
+$(dnp3path):		src/dnp3
+
+dnp3:			$(dnp3path)
