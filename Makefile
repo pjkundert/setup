@@ -585,7 +585,8 @@ m2pypath	= /usr/local/lib/python$(pyvers)/$(pypkgs)/m2py-$(m2pyvers)-py$(pyvers)
 src/mongrel2/examples/python:				\
 			src/mongrel2 storm pyrepl simplejson nose pyzmq
 
-$(m2pypath):		src/mongrel2/examples/python
+$(m2pypath):		src/mongrel2/examples/python	\
+			src/mongrel2/examples/python/mongrel2
 	cd $< && python setup.py install --prefix=/usr/local
 
 m2py:			$(m2pypath)
