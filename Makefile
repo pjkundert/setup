@@ -27,9 +27,14 @@ all:			test				\
 			emacs				\
 			python				\
 			python-modules			\
-			tex
+			tex				\
+			paxos
 
 
+# 
+# Deduce system; supports OS-X, Linux (Debian/Ubuntu).  Computes
+# platform-specific installation procedure for non-source packages.
+# 
 SYSTEM			= $(shell uname -s)
 ifeq ($(SYSTEM),Linux)
     # Linux.  Use apt-get to install (assume Debian or Ubuntu...)
@@ -186,7 +191,14 @@ test:			/usr/local
 	fi
 
 
+# 
 # personal	-- Collect and store personal information in Makefile.personal
+# 
+#     Creates Makefile.personal ('make' variables) and .bash_personal ('bash'
+# variables), containing all necessary individual information.  Will employ GNU
+# 'make' auto re-exec feature to re-load upon any changes to included
+# Makefile.personal.
+# 
 .PHONY: personal	
 personal:		Makefile.personal		\
 			.authinfo			\
@@ -261,6 +273,7 @@ git:			Makefile.personal		\
 	    git config --global core.editor "emacs"; \
 	fi
 
+
 # bash		-- set up bash, etc.
 #
 #     Checks for and installs git prompt support.
@@ -326,8 +339,6 @@ Library/Preferences/com.googlecode.iterm2.plist:\
 # 'personal' target, here, since Makefile.personal is used by
 # .emacs.d/personal/Makefile, to generate various personalized
 # variables.
-
-
 .PHONY: emacs emacs-24
 emacs:			.emacs.d/personal		\
 			emacs-24			\
@@ -367,12 +378,13 @@ emacs-24:		$(emacs)			\
 	cd $@; make
 
 
-# python
+# python, python-modules
 #
-#     Various required python extension.  Source in ~/src/..., install
-# into /usr/local/python#.#/$(pypkgs)/.
-
-.PHONY: python
+#     Various required python extension.  Source in ~/src/..., install into
+# /usr/local/python#.#/$(pypkgs)/.  We may build from source, to allow use of
+# "forked" repositories, if necessary, to capture any defect fixes required by
+# our projects, and to gain control over versions.
+.PHONY: python python-modules
 
 python:
 	@if ! python --version 2>&1 | grep -q "2.[67]"; then \
@@ -885,7 +897,7 @@ plc:			modbus				\
 
 pymodbusurl	= git://github.com/bashwork/pymodbus.git
 pymodbusvers	= 0.9.0
-pymodbuspath	= /usr/local/lib/python$(pyvers)/site-packages/pymodbus-$(pymodbusvers)-py$(pyvers).egg
+pymodbuspath	= /usr/local/lib/python$(pyvers)/$(pypkgs)/pymodbus-$(pymodbusvers)-py$(pyvers).egg
 
 src/pymodbus:		FORCE
 	@if [ ! -d $@ ]; then				\
@@ -904,7 +916,7 @@ pymodbus:		python $(pymodbuspath)
 
 pycryptourl	= git://github.com/dlitz/pycrypto.git
 pycryptovers	= 2.6
-pycryptopath	= /usr/local/lib/python$(pyvers)/site-packages/pycrypto-$(pycryptovers)-py$(pyvers).egg
+pycryptopath	= /usr/local/lib/python$(pyvers)/$(pypkgs)/pycrypto-$(pycryptovers)-py$(pyvers).egg
 
 src/pycrypto:		FORCE
 	@if [ ! -d $@ ]; then				\
@@ -922,7 +934,7 @@ pycrypto:		python $(pycryptopath)
 
 pyasn1url	= :pserver:anonymous:@pyasn1.cvs.sourceforge.net:/cvsroot/pyasn1
 pyasn1vers	= 0.1.4rc0
-pyasn1path	= /usr/local/lib/python$(pyvers)/site-packages/pyasn1-$(pyasn1vers)-py$(pyvers).egg
+pyasn1path	= /usr/local/lib/python$(pyvers)/$(pypkgs)/pyasn1-$(pyasn1vers)-py$(pyvers).egg
 
 src/pyasn1:		FORCE
 	@if [ ! -d $@ ]; then				\
@@ -1002,15 +1014,13 @@ $(libpcccpath):		src/$(libpcccbase)/Makefile
 libpccc:		$(libpcccpath)
 
 
-.PHONY: dnp dnp3
-
+.PHONY: dnp
+dnp:			dnp3
 
 dnp3url		= git://github.com/gec/dnp3
 dnp3vers	= 1.0.0
-dnp3path	= /usr/local/lib/python$(pyvers)/site-packages/pyasn1-$(dnp3vers)-py$(pyvers).egg
-
-dnp:			dnp3
-
+dnp3path	= /usr/local/lib/libdnp3.a
+.PHONY: dnp3
 src/dnp3:		FORCE
 	@if [ ! -d $@ ]; then				\
 	    git clone $(dnp3url) $@;			\
@@ -1023,11 +1033,45 @@ $(dnp3path):		src/dnp3
 	    cd $<; autoconf;				\
 	fi
 	@if [ ! -r $</Makefile ]; then			\
-	    cd $<;./configure --prefix=/usr/local;	\
+	    cd $<; ./configure --prefix=/usr/local;	\
 	fi
 	cd $<; make && make check && make install
 
-
-$(dnp3path):		src/dnp3
-
 dnp3:			$(dnp3path)
+
+#
+# paxos		- Paxos (distributed agreement) support
+#
+.PHONY: paxos
+paxos:			concoord
+
+
+dnspythonurl	= git://github.com/rhalley/dnspython.git
+.PHONY: dnspython
+src/dnspython:		FORCE
+	@if [ ! -d $@ ]; then				\
+	    git clone $(dnspythondurl) $@;		\
+	fi
+	cd $@; git checkout master
+$(dnspythonpath):	src/dnspython
+dnspython:		$(dnspythonpath)
+
+# concoord	-- Python object replicas
+# 
+# We use our own fork of the upstream, 'til some bug fixes we submit are merged.
+
+#concoordurl	= git://git.systems.cs.cornell.edu/concoord.git
+concoordurl	= git://github.com/pjkundert/concoord.git
+concoordpath	= /usr/local/lib/python$(pyvers)/$(pypkgs)/concoord
+.PHONY: concoord
+src/concoord:		FORCE
+	@if [ ! -d $@ ]; then				\
+	    git clone $(concoordurl) $@;		\
+	fi
+	cd $@; git checkout master
+
+$(concoordpath):	src/concoord dnspython
+	@mkdir -p $(dir $@)
+	export PYTHONPATH=$(dir $@); cd $</src; python setup.py install --prefix=/usr/local
+
+concoord:		$(concoordpath)
