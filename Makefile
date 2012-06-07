@@ -895,7 +895,12 @@ plc:			modbus				\
 			allenbradley			\
 			dnp
 
-pymodbusurl	= git://github.com/bashwork/pymodbus.git
+.PHONY: modbus pymodbus libmodbus
+
+modbus:			pymodbus			\
+			libmodbus
+
+pymodbusurl	= git://github.com/pjkundert/pymodbus.git
 pymodbusvers	= 0.9.0
 pymodbuspath	= /usr/local/lib/python$(pyvers)/$(pypkgs)/pymodbus-$(pymodbusvers)-py$(pyvers).egg
 
@@ -905,7 +910,7 @@ src/pymodbus:		FORCE
 	fi
 	cd $@; git checkout master
 
-$(pymodbuspath):	src/pymodbus pycrypto pyasn1
+$(pymodbuspath):	src/pymodbus pycrypto pyasn1 nose
 	@mkdir -p $(dir $@)
 	export PYTHONPATH=$(dir $@); cd $<; python setup.py install --prefix=/usr/local
 
@@ -913,7 +918,6 @@ pymodbus:		python $(pymodbuspath)
 
 
 .PHONY: pycrypto
-
 pycryptourl	= git://github.com/dlitz/pycrypto.git
 pycryptovers	= 2.6
 pycryptopath	= /usr/local/lib/python$(pyvers)/$(pypkgs)/pycrypto-$(pycryptovers)-py$(pyvers).egg
@@ -947,12 +951,6 @@ $(pyasn1path):	src/pyasn1
 	export PYTHONPATH=$(dir $@); cd $<; python setup.py install --prefix=/usr/local
 
 pyasn1:			python $(pyasn1path)
-
-
-.PHONY: modbus pymodbus libmodbus
-
-modbus:			pymodbus			\
-			libmodbus
 
 
 libmodbusurl	= git://github.com/stephane/libmodbus.git
