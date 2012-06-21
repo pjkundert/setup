@@ -2,13 +2,18 @@
   Clone into home directory.  Or, clone into 'setup', and mv all files
   into your home directory (or better yet, fork and use your own):
 
+    #+BEGIN_SRC
     git clone git://github.com/pjkundert/setup.git
     mv setup/* setup/.* ~
+    #+END_SRC
 
   It must be configured to excludes all files, by default: to add
   a file for tracking, use: git add -f <filename>:
 
+    #+BEGIN_SRC
     echo "*" >> .git/info/exclude
+    #+END_SRC
+
 ** Makefile
    Checks, downloads and builds necessary targets.  The following
    targets are supported:
