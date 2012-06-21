@@ -75,20 +75,6 @@ $(automake):
 
 $(libtool):
 	sudo apt-get -u install libtool
-# Mostly from http://chrisperkins.blogspot.ca/2011/07/building-emacs-24.html
-src/emacs:		$(bazaar)			\
-			$(aspell)			\
-			$(gnutls) 			\
-			FORCE
-	@if [ ! -d $@ ]; then				\
-	    git clone git://git.savannah.gnu.org/emacs.git $@;\
-	fi
-
-$(emacs):		src/emacs
-	sudo apt-get -u install libncurses5-dev libxpm-dev libjpeg-dev libgif-dev libtiff4-dev libpng12-dev
-	cd $<; if [ ! -r configure ]; then ./autogen.sh; fi
-	cd $<; if [ ! -r Makefile ]; then ./configure --prefix=/usr/local --without-makeinfo --with-x-toolkit=no; fi
-	cd $<; make bootstrap && make && make install
 
 .PHONY: sqlite3
 
@@ -143,7 +129,7 @@ $(emacs):		$(bazaar)			\
 			$(aspell)			\
 			$(gnutls)			\
 			$(homebrew)
-	brew install emacs --HEAD --use-git-head || brew update emacs || brew list emacs && touch $@
+	brew install emacs || brew update emacs || brew list emacs && touch -c $@
 
 .PHONY: sqlite3
 # Sqlite3 is already install on OS-X
