@@ -21,7 +21,7 @@
 *** make iterm
     Checks for iTerm2, and checks for configuration of control- and
     shift-return keys to send escape sequences, so that org-mode is
-    usabled in an Mac OS-X iTerm2 text termainal.
+    usabled in an Mac OS-X iTerm2 text terminal.
 *** make homebrew
     Checks for and installs homebrew (on Mac).  Required for many other packages.
 *** make emacs
